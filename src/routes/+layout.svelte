@@ -7,6 +7,7 @@
 	import MobileNav from '$lib/components/MobileNav.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import RateModal from '$lib/components/RateModal.svelte';
+	import { getBrowserClient } from '$lib/supabase/client';
 
 	let { data, children } = $props();
 
@@ -14,8 +15,9 @@
 	onMount(() => {
 		const {
 			data: { subscription }
-		} = data.supabase.auth.onAuthStateChange((_event, newSession) => {
-			if (newSession?.expires_at !== data.session?.expires_at) invalidate('supabase:auth');
+		} = getBrowserClient().auth.onAuthStateChange((event, newSession) => {
+			if (event === 'INITIAL_SESSION') return;
+			if ((newSession?.expires_at ?? null) !== (data.session?.expires_at ?? null)) invalidate('supabase:auth');
 		});
 		return () => subscription.unsubscribe();
 	});

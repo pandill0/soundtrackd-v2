@@ -5,6 +5,7 @@
 	import Avatar from '$lib/components/Avatar.svelte';
 	import Picker from '$lib/components/Picker.svelte';
 	import SupporterBadge from '$lib/components/SupporterBadge.svelte';
+	import { getBrowserClient } from '$lib/supabase/client';
 	import { openRateModal } from '$lib/rate-modal.svelte';
 	import type { CatalogItem, Message } from '$lib/types';
 	import { timeAgo } from '$lib/utils';
@@ -30,7 +31,7 @@
 
 	onMount(() => {
 		scrollDown();
-		const supabase = data.supabase;
+		const supabase = getBrowserClient();
 		if (data.session?.access_token) supabase.realtime.setAuth(data.session.access_token);
 		const channel = supabase
 			.channel(`conv:${data.conversationId}`)
