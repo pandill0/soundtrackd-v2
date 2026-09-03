@@ -216,7 +216,8 @@ create policy "messages: members read" on public.messages for select
 create policy "messages: members write" on public.messages for insert
   with check (sender_id = auth.uid() and deleted_at is null and public.can_message(conversation_id, auth.uid()));
 create policy "messages: sender edits" on public.messages for update
-  using (sender_id = auth.uid()) with check (sender_id = auth.uid());
+  using (sender_id = auth.uid())
+  with check (sender_id = auth.uid() and public.is_conversation_member(conversation_id, auth.uid()));
 
 -- Only friends may open a conversation — enforced here, not in the UI (§8.1).
 create or replace function public.get_or_create_conversation(p_user uuid) returns uuid

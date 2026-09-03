@@ -381,5 +381,20 @@ await as(u2, async () => {
 	ok((await rows(`select * from public.subscriptions`)).length === 0, "cannot read others' subscriptions");
 });
 
+console.log('\nProfile column protection');
+await as(u1, async () => {
+	await db.query(`update public.profiles set supporter_until = now() + interval '10 years', username = 'hacker', username_set = false, bio = 'legit bio change' where id = $1`, [u1]);
+	const p = await one(`select username, username_set, bio, public.is_supporter(p) as s from public.profiles p where id = $1`, [u1]);
+	ok(p.username === 'august_test' && p.username_set === true && p.s === false && p.bio === 'legit bio change', 'users cannot grant themselves supporter or rename; ordinary fields still save');
+	await fails(() => db.query(`select public.set_username('august_renamed')`), 'set_username still refuses once set', /already set/);
+	await db.query(`update public.profiles set now_playing_source = 'listenbrainz', now_playing_id = $2, now_playing_at = now() where id = $1`, [u1, albumRow.id]);
+	ok((await one(`select now_playing_source from public.profiles where id = $1`, [u1])).now_playing_source === 'manual', 'users can only set the manual now-playing source');
+});
+const u4 = (await one(`insert into auth.users (email) values ('d@x.io') returning id`)).id;
+await as(u4, async () => {
+	const r = await one(`select username, username_set from public.set_username('fourth_user')`);
+	ok(r.username === 'fourth_user' && r.username_set === true, 'set_username still works for a fresh OAuth signup (flag path)');
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

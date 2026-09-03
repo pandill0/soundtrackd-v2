@@ -62,3 +62,60 @@ begin
   end if;
 end $$;
 revoke execute on function public.apply_subscription_event(text, text, text, uuid, text, timestamptz) from public, anon, authenticated;
+
+-- ─── Column protection on profiles ─────────────────────────────────────────
+-- "update own row" RLS would otherwise let a user write their own supporter_until, rename
+-- themselves, or flip username_set and re-run the welcome step. Only the service role (the
+-- webhook / jobs) and set_username() (which sets a session flag) may touch these columns.
+create or replace function public.protect_profile_columns() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  is_user boolean := auth.uid() is not null;   -- a signed-in user's JWT; service role has none
+  allow_username boolean := coalesce(current_setting('soundtrackd.allow_username_change', true), '') = '1';
+begin
+  if is_user then
+    new.supporter_since := old.supporter_since;
+    new.supporter_until := old.supporter_until;
+    new.id := old.id;
+    new.created_at := old.created_at;
+    if not allow_username then
+      new.username := old.username;
+      new.username_set := old.username_set;
+    end if;
+    -- users can only ever set the manual now-playing source; pollers set the others
+    if new.now_playing_source is distinct from old.now_playing_source and new.now_playing_source <> 'manual' then
+      new.now_playing_source := 'manual';
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists profiles_protect_columns on public.profiles;
+create trigger profiles_protect_columns before update on public.profiles
+  for each row execute function public.protect_profile_columns();
+
+-- set_username() is the one sanctioned username write: it raises the flag for its own transaction.
+create or replace function public.set_username(p_username text) returns public.profiles
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  rec public.profiles;
+begin
+  if uid is null then
+    raise exception 'not signed in' using errcode = '42501';
+  end if;
+  select * into rec from public.profiles where id = uid;
+  if rec.id is null then
+    raise exception 'profile missing' using errcode = 'P0002';
+  end if;
+  if rec.username_set then
+    raise exception 'username already set' using errcode = '23505';
+  end if;
+  if not public.username_available(p_username) then
+    raise exception 'username unavailable' using errcode = '23505';
+  end if;
+  perform set_config('soundtrackd.allow_username_change', '1', true);
+  update public.profiles set username = p_username, username_set = true
+  where id = uid returning * into rec;
+  perform set_config('soundtrackd.allow_username_change', '', true);
+  return rec;
+end $$;
