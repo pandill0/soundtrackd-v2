@@ -1,42 +1,53 @@
-# sv
+# Soundtrackd
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+**Letterboxd, for music.** Rate albums and songs with half-stars, write reviews, follow people whose
+taste you trust, keep a listen queue, message your friends a record. Live at [soundtrackd.org](https://soundtrackd.org).
 
-## Creating a project
+This is v2 — a from-scratch rebuild of the vanilla-HTML v1. The full product spec is `REBUILD-SPEC.md`
+(in the v1 repo); the operational handoff is [`SETUP.md`](SETUP.md).
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Stack
 
-```sh
-# create a new project
-npx sv create my-app
+SvelteKit (Svelte 5) · TypeScript · Supabase (Postgres + Auth + Realtime) · Netlify.
+Catalogue identity is MusicBrainz (CC0); Deezer provides search and artwork during the beta.
+
+## Layout
+
+```
+src/
+  app.css                     design tokens + global styles (§3 of the spec)
+  hooks.server.ts             Supabase client per request, session, route protection, /welcome gate
+  lib/
+    config.ts                 the one place public config lives
+    server/env.ts             the one place secrets live
+    server/catalog/           THE catalogue module — Deezer/MusicBrainz/Last.fm behind one API
+    server/affiliate.ts       partner link templates (§13.2A)
+    entitlements.ts           isSupporter() — the one entitlement helper (§13.2C)
+    stars.ts                  rating steps + labels ("★★★★ — great")
+    components/               Nav, RateModal, Stars, AlbumCard, SortBar, Picker, …
+  routes/                     one folder per page; +page.server.ts loads, +page.svelte renders
+    api/                      JSON endpoints the pages call (rate, like, queue, messages, jobs…)
+supabase/
+  migrations/                 seven idempotent SQL files — the schema, RLS, triggers, aggregates
+  test/run.mjs                npm run db:test — applies them to PGlite and asserts behaviour
+netlify/functions/            scheduled job runner
 ```
 
-To recreate this project with the same configuration:
+## Working on it
 
-```sh
-# recreate this project
-npx sv@0.17.0 create --template minimal --types ts --install npm soundtrackd-v2
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+```bash
+npm install
+cp .env.example .env         # then fill in SUPABASE_SECRET_KEY
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+npm run check                # types
+npm run db:test              # database
 ```
 
-## Building
+Rules that keep this codebase healthy (all from hard-won v1 lessons in the spec):
 
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- **Nothing outside `src/lib/server/catalog/` talks to a music provider** or reads a provider id.
+- **Aggregates happen in Postgres** (views/RPCs in `supabase/migrations/…aggregates.sql`), never by
+  fetching rows into the browser.
+- **Sort/filter state lives in the URL** via the shared `SortBar` component.
+- Style classes, never bare `nav`/`header`/`section` element selectors.
+- Anything social is free forever. The supporter tier is cosmetic only.

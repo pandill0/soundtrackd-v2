@@ -8,7 +8,7 @@ export default async () => {
 	const secret = process.env.JOBS_SECRET;
 	if (!base || !secret) return new Response('missing URL or JOBS_SECRET', { status: 500 });
 	const log: string[] = [];
-	for (const job of ['warm-catalog', 'mbid-backfill']) {
+	for (const job of ['listenbrainz', 'warm-catalog', 'mbid-backfill']) {
 		for (let i = 0; i < 3; i++) {
 			const res = await fetch(`${base}/api/jobs/${job}`, { method: 'POST', headers: { authorization: `Bearer ${secret}` } });
 			const body = await res.json().catch(() => ({}));
@@ -20,4 +20,4 @@ export default async () => {
 	return new Response(log.join('\n'));
 };
 
-export const config = { schedule: '@hourly' };
+export const config = { schedule: '*/10 * * * *' }; // every 10 minutes (now-playing needs to be fresh)

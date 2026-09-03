@@ -1,12 +1,13 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { serverEnv } from '$lib/server/env';
-import { backfillLegacy, backfillMbids, warmCatalog } from '$lib/server/catalog/jobs';
+import { backfillLegacy, backfillMbids, pollListenBrainz, warmCatalog } from '$lib/server/catalog/jobs';
 
 const JOBS = {
 	'mbid-backfill': backfillMbids,
 	'warm-catalog': warmCatalog,
-	'backfill-v1': backfillLegacy
+	'backfill-v1': backfillLegacy,
+	listenbrainz: pollListenBrainz
 } as const;
 
 /**

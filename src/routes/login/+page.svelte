@@ -5,6 +5,7 @@
 	let { data, form } = $props();
 
 	type Mode = 'signin' | 'signup' | 'reset';
+	// svelte-ignore state_referenced_locally
 	let mode = $state<Mode>(data.mode as Mode);
 	let busy = $state(false);
 	let remember = $state(true);

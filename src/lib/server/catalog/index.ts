@@ -285,9 +285,28 @@ export async function trendingAlbums(limit = 12): Promise<CatalogItem[]> {
 	return pubAll(albums);
 }
 
+/** Albums already known for an artist — database only, no provider calls (album page sidebar). */
+export async function albumsByArtist(artistId: string, exclude?: string, limit = 6): Promise<CatalogItem[]> {
+	const rows = await getStore().albumsOf(artistId);
+	return pubAll(rows.filter((r) => r.id !== exclude).slice(0, limit));
+}
+
 /** Random pool of album covers for the landing-page hero background. */
 export async function heroCovers(limit = 72): Promise<string[]> {
 	return getStore().coverPool(limit);
+}
+
+/** Resolve a (artist, track title) pair to a catalogue track, best effort (ListenBrainz poller). */
+export async function findTrack(artist: string, title: string): Promise<CatalogItem | null> {
+	try {
+		const r = await dz.dzSearch('track', `${artist} ${title}`, 1);
+		const t = r.data[0] as dz.DzTrack | undefined;
+		if (!t) return null;
+		const [row] = (await ensureTracks([t])).tracks;
+		return pub(row);
+	} catch {
+		return null;
+	}
 }
 
 /** Resolve a (title, artist) pair to a catalogue album, best effort. */

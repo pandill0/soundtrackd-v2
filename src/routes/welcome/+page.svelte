@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 
 	let { data, form } = $props();
+	// svelte-ignore state_referenced_locally
 	let username = $state((form?.username as string | undefined) ?? data.suggestion ?? '');
 	let status = $state<'idle' | 'checking' | 'free' | 'taken' | 'invalid'>('idle');
 	let timer: ReturnType<typeof setTimeout> | undefined;

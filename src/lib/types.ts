@@ -136,6 +136,7 @@ export interface Friendship {
 	requester_id: string;
 	addressee_id: string;
 	status: FriendshipStatus;
+	blocked_by: string | null;
 	created_at: string;
 	responded_at: string | null;
 }

@@ -4,7 +4,7 @@
  */
 import { getAdminClient } from '$lib/supabase/admin';
 import { HERO_ALBUMS } from './curated';
-import { getStore, findAlbum, resolveLegacy } from './index';
+import { getStore, findAlbum, findTrack, resolveLegacy } from './index';
 import { matchAlbum, matchArtist } from './musicbrainz';
 
 export interface JobResult {
@@ -173,4 +173,41 @@ export async function backfillLegacy(budgetMs = 8000): Promise<JobResult> {
 	}
 
 	return { job: 'backfill-v1', processed, changed, more: false, notes };
+}
+
+/**
+ * ListenBrainz "playing now" → profiles.now_playing_* (§8.1). Public endpoint, no key, open terms.
+ * Runs for every profile that has set a ListenBrainz username; expiry is handled on read.
+ */
+export async function pollListenBrainz(budgetMs = 8000): Promise<JobResult> {
+	const admin = getAdminClient();
+	if (!admin) throw new Error('SUPABASE_SECRET_KEY required');
+	const hasTime = budget(budgetMs);
+	const { data: profiles } = await admin.from('profiles').select('id, listenbrainz_user').not('listenbrainz_user', 'is', null).limit(200);
+	let processed = 0;
+	let changed = 0;
+	const notes: string[] = [];
+	for (const p of profiles ?? []) {
+		if (!hasTime()) return { job: 'listenbrainz', processed, changed, more: true, notes };
+		processed++;
+		try {
+			const res = await fetch(`https://api.listenbrainz.org/1/user/${encodeURIComponent(p.listenbrainz_user)}/playing-now`, {
+				headers: { accept: 'application/json' }
+			});
+			if (!res.ok) continue;
+			const json = (await res.json()) as { payload?: { listens?: { track_metadata?: { artist_name?: string; track_name?: string; release_name?: string } }[] } };
+			const now = json.payload?.listens?.[0]?.track_metadata;
+			if (!now?.artist_name || !now.track_name) continue;
+			const item = await findTrack(now.artist_name, now.track_name);
+			if (!item) continue;
+			await admin
+				.from('profiles')
+				.update({ now_playing_id: item.id, now_playing_source: 'listenbrainz', now_playing_at: new Date().toISOString() })
+				.eq('id', p.id);
+			changed++;
+		} catch (e) {
+			notes.push(`${p.listenbrainz_user}: ${(e as Error).message}`);
+		}
+	}
+	return { job: 'listenbrainz', processed, changed, more: false, notes };
 }
