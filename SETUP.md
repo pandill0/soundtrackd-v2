@@ -14,9 +14,10 @@ provider settings, hosting, and the one-time data backfill. Work through it top 
 | Catalogue | **MusicBrainz IDs as identity, Deezer as the beta search/artwork provider**, all behind `src/lib/server/catalog/` | §6.1 — no page ever sees a provider id; the Cloudflare worker is retired |
 | Payments | **Lemon Squeezy** hosted checkout + webhook | Merchant of record handles international tax (§13.2) |
 
-Local commands:
+Local commands (run them inside the project folder — `npm` only works where `package.json` lives):
 
 ```bash
+cd ~/Documents/Claude/Projects/soundtrackd-v2
 npm install          # once
 npm run dev          # http://localhost:5173
 npm run check        # type-check every .ts/.svelte file
