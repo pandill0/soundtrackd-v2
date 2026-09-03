@@ -109,7 +109,17 @@ production URL after deploying.
 
 ## 6. Deploy
 
-Simplest path: a **new Netlify site** from this repo (Add new site → Import → pick the v2 repo).
+First the code needs to be on GitHub, because Netlify deploys from a Git repository:
+
+1. Create an empty repo at https://github.com/new (name it `soundtrackd-v2`, no README).
+2. Connect and push from the project folder:
+   ```bash
+   git remote add origin https://github.com/pandill0/soundtrackd-v2.git
+   git push -u origin main
+   ```
+   After that, every `git push` deploys automatically, exactly like v1.
+
+Then a **new Netlify site** from this repo (Add new site → Import an existing project → GitHub → pick `soundtrackd-v2`).
 `netlify.toml` already sets the build command and publish directory. Add the env vars from §1.
 It builds at `https://<name>.netlify.app`; verify sign-in and rating there. When happy, move the
 `soundtrackd.org` domain from the v1 site to the new one (Domain management → add domain; Netlify
