@@ -1,0 +1,6 @@
+# Minimal Supabase CLI config so `supabase link --project-ref cmjemqmxnpusluzyiwyj` and
+# `supabase db push` work once the CLI is installed. Local stack (supabase start) needs Docker.
+project_id = "soundtrackd-v2"
+
+[db]
+major_version = 17
