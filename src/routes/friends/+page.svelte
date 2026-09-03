@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import Avatar from '$lib/components/Avatar.svelte';
-	import FriendButton from '$lib/components/FriendButton.svelte';
+	import FollowButton from '$lib/components/FollowButton.svelte';
 	import SupporterBadge from '$lib/components/SupporterBadge.svelte';
 	import { timeAgo } from '$lib/utils';
 
@@ -9,6 +9,8 @@
 	let q = $state('');
 	let results = $state<{ id: string; username: string; avatar_url: string | null; accent_color: string | null; supporter_until: string | null }[]>([]);
 	let timer: ReturnType<typeof setTimeout> | undefined;
+	const followingIds = $derived(new Set([...data.friends, ...data.youFollow].map((p) => p.id)));
+	const followerIds = $derived(new Set([...data.friends, ...data.followsYou].map((p) => p.id)));
 
 	function search() {
 		clearTimeout(timer);
@@ -20,8 +22,8 @@
 			results = await fetch(`/api/members?q=${encodeURIComponent(q)}`).then((r) => r.json());
 		}, 300);
 	}
-	async function act(action: string, body: Record<string, unknown>) {
-		await fetch('/api/friend', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action, ...body }) });
+	async function unblock(id: string) {
+		await fetch('/api/friend', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'unblock', user_id: id }) });
 		await invalidateAll();
 	}
 </script>
@@ -31,7 +33,7 @@
 <div class="container page friends-page">
 	<div class="section-head">
 		<h1>Friends</h1>
-		<span class="muted small">Friends can message each other. Following is separate — that's just your feed.</span>
+		<span class="muted small">Follow someone to see their activity. When they follow you back, you're friends and can message.</span>
 	</div>
 
 	<div class="card add">
@@ -43,22 +45,22 @@
 					<div class="list-row">
 						<Avatar profile={u} size={32} />
 						<a class="grow" href="/profile/{encodeURIComponent(u.username)}">{u.username}</a>
-						<button class="btn btn-sm" onclick={() => act('request', { user_id: u.id })}>+ Add</button>
+						<FollowButton userId={u.id} following={followingIds.has(u.id)} followsMe={followerIds.has(u.id)} small menu={false} />
 					</div>
 				{/each}
 			</div>
 		{/if}
 	</div>
 
-	{#if data.incoming.length}
+	{#if data.followsYou.length}
 		<section class="section">
-			<h2 class="section-title">Requests <span class="badge">{data.incoming.length}</span></h2>
-			{#each data.incoming as r (r.id)}
+			<h2 class="section-title">Follows you <span class="badge">{data.followsYou.length}</span></h2>
+			<p class="muted small">Follow back and you're friends.</p>
+			{#each data.followsYou as p (p.id)}
 				<div class="list-row">
-					<Avatar profile={r.other} size={40} />
-					<div class="grow"><a href="/profile/{encodeURIComponent(r.other.username)}">{r.other.username}</a> <span class="muted tiny">wants to be friends · {timeAgo(r.created_at)}</span></div>
-					<button class="btn btn-sm btn-primary" onclick={() => act('accept', { id: r.id })}>Accept</button>
-					<button class="btn btn-sm btn-ghost" onclick={() => act('decline', { id: r.id })}>Decline</button>
+					<Avatar profile={p} size={40} />
+					<div class="grow truncate"><a href="/profile/{encodeURIComponent(p.username)}">{p.username}</a> <SupporterBadge profile={p} small /><div class="muted tiny">since {timeAgo(p.since)}</div></div>
+					<FollowButton userId={p.id} following={false} followsMe small menu={false} />
 				</div>
 			{/each}
 		</section>
@@ -71,9 +73,9 @@
 				{#each data.friends as f (f.id)}
 					<div class="card tight friend">
 						<div class="row">
-							<Avatar profile={f.other} size={44} />
+							<Avatar profile={f} size={44} />
 							<div class="grow truncate">
-								<a class="name" href="/profile/{encodeURIComponent(f.other.username)}">{f.other.username}</a> <SupporterBadge profile={f.other} small />
+								<a class="name" href="/profile/{encodeURIComponent(f.username)}">{f.username}</a> <SupporterBadge profile={f} small />
 								{#if f.live?.status_text}<div class="small truncate">{f.live.status_emoji ?? ''} {f.live.status_text}</div>{/if}
 								{#if f.live?.np_title}
 									<a class="np truncate" href="/album/{f.live.now_playing_id}"><span class="disc"></span>{f.live.np_title}{#if f.live.np_artist}<span class="muted"> · {f.live.np_artist}</span>{/if}</a>
@@ -83,29 +85,28 @@
 							</div>
 						</div>
 						<div class="row actions">
-							<a class="btn btn-sm" href="/messages/new?to={f.other.id}">Message</a>
-							<FriendButton userId={f.other.id} friendship={f} small />
+							<a class="btn btn-sm" href="/messages/new?to={f.id}">Message</a>
+							<FollowButton userId={f.id} following followsMe small />
 						</div>
 					</div>
 				{/each}
 			</div>
 		{:else}
 			<div class="empty">
-				No friends yet. Friendship is mutual — send a request and they accept.
+				No friends yet. Follow people you like; when they follow back, they show up here.
 				<br /><a class="btn btn-sm btn-primary" href="/members">Browse members</a>
 			</div>
 		{/if}
 	</section>
 
-	{#if data.outgoing.length}
+	{#if data.youFollow.length}
 		<section class="section">
-			<h2 class="section-title">Sent requests</h2>
-			{#each data.outgoing as r (r.id)}
+			<h2 class="section-title">You follow <span class="muted small">({data.youFollow.length})</span></h2>
+			{#each data.youFollow as p (p.id)}
 				<div class="list-row">
-					<Avatar profile={r.other} size={32} />
-					<a class="grow" href="/profile/{encodeURIComponent(r.other.username)}">{r.other.username}</a>
-					<span class="muted tiny">{timeAgo(r.created_at)}</span>
-					<button class="btn btn-sm btn-ghost" onclick={() => act('remove', { user_id: r.other.id })}>Cancel</button>
+					<Avatar profile={p} size={32} />
+					<a class="grow truncate" href="/profile/{encodeURIComponent(p.username)}">{p.username}</a>
+					<FollowButton userId={p.id} following small menu={false} />
 				</div>
 			{/each}
 		</section>
@@ -114,11 +115,11 @@
 	{#if data.blocked.length}
 		<section class="section">
 			<h2 class="section-title muted">Blocked</h2>
-			{#each data.blocked as r (r.id)}
+			{#each data.blocked as p (p.id)}
 				<div class="list-row">
-					<Avatar profile={r.other} size={32} />
-					<span class="grow muted">{r.other.username}</span>
-					<button class="btn btn-sm btn-ghost" onclick={() => act('unblock', { user_id: r.other.id })}>Unblock</button>
+					<Avatar profile={p} size={32} link={false} />
+					<span class="grow muted">{p.username}</span>
+					<button class="btn btn-sm btn-ghost" onclick={() => unblock(p.id)}>Unblock</button>
 				</div>
 			{/each}
 		</section>

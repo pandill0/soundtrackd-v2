@@ -11,6 +11,7 @@
 	// svelte-ignore state_referenced_locally
 	let q = $state(data.q);
 	const mine = $derived(new Set(data.mine));
+	const theirs = $derived(new Set(data.theirs));
 	function submit(e: SubmitEvent) {
 		e.preventDefault();
 		const url = new URL(page.url);
@@ -41,7 +42,7 @@
 						<div class="muted tiny">{m.review_count} ratings · joined {formatDate(String(m.created_at), { month: 'short', day: undefined })}{#if m.last_seen_at} · seen {timeAgo(String(m.last_seen_at))}{/if}</div>
 					</div>
 					{#if page.data.user && page.data.user.id !== m.id}
-						<FollowButton userId={String(m.id)} following={mine.has(String(m.id))} small />
+						<FollowButton userId={String(m.id)} following={mine.has(String(m.id))} followsMe={theirs.has(String(m.id))} small menu={false} />
 					{/if}
 				</div>
 			{/each}

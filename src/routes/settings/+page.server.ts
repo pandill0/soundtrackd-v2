@@ -1,7 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { isSupporter } from '$lib/entitlements';
-import type { FavoriteAlbum, FavoriteArtist } from '$lib/types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user || !locals.profile) redirect(303, '/login?next=/settings');
@@ -56,28 +55,6 @@ export const actions: Actions = {
 			.eq('id', locals.user.id);
 		if (error) return fail(400, { tab: 'status', error: error.message });
 		return { tab: 'status', success: 'Status updated.' };
-	},
-
-	favorites: async ({ request, locals }) => {
-		if (!locals.user) return fail(401);
-		const form = await request.formData();
-		const parse = <T>(key: string): (T | null)[] => {
-			try {
-				const arr = JSON.parse(String(form.get(key) ?? '[]'));
-				return Array.isArray(arr) ? arr.slice(0, 4) : [];
-			} catch {
-				return [];
-			}
-		};
-		const albums = parse<FavoriteAlbum>('favorite_albums').map((a) =>
-			a && typeof a === 'object' ? { id: String(a.id ?? ''), catalogId: a.catalogId ?? null, name: String(a.name ?? '').slice(0, 200), artist: String(a.artist ?? '').slice(0, 200), cover: String(a.cover ?? '').slice(0, 500) } : null
-		);
-		const artists = parse<FavoriteArtist>('favorite_artists').map((a) =>
-			a && typeof a === 'object' ? { id: String(a.id ?? ''), catalogId: a.catalogId ?? null, name: String(a.name ?? '').slice(0, 200), picture: String(a.picture ?? '').slice(0, 500) } : null
-		);
-		const { error } = await locals.supabase.from('profiles').update({ favorite_albums: albums, favorite_artists: artists }).eq('id', locals.user.id);
-		if (error) return fail(400, { tab: 'favorites', error: error.message });
-		return { tab: 'favorites', success: 'Favourites saved.' };
 	},
 
 	password: async ({ request, locals }) => {

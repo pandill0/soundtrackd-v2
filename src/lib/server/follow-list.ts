@@ -19,10 +19,15 @@ export async function loadFollowList(locals: App.Locals, username: string, which
 		.map((r) => (Array.isArray(r.profile) ? r.profile[0] : r.profile))
 		.filter(Boolean);
 
-	let mine = new Set<string>();
+	let mine: string[] = [];
+	let theirs: string[] = [];
 	if (locals.user) {
-		const { data } = await sb.from('follows').select('following_id').eq('follower_id', locals.user.id);
-		mine = new Set((data ?? []).map((r) => r.following_id as string));
+		const [a, b] = await Promise.all([
+			sb.from('follows').select('following_id').eq('follower_id', locals.user.id),
+			sb.from('follows').select('follower_id').eq('following_id', locals.user.id)
+		]);
+		mine = (a.data ?? []).map((r) => r.following_id as string);
+		theirs = (b.data ?? []).map((r) => r.follower_id as string);
 	}
-	return { username: profile.username, which, people, mine: [...mine] };
+	return { username: profile.username, which, people, mine, theirs };
 }

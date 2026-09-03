@@ -14,9 +14,9 @@
 				return { text: `${who} liked your review${a?.album_title ? ` of ${a.album_title}` : ''}`, href: a?.catalog_item_id ? `/album/${a.catalog_item_id}` : '/notifications' };
 			}
 			case 'friend_request':
-				return { text: `${who} sent you a friend request`, href: '/friends' };
+				return { text: `${who} wanted to be friends — follow them back and you will be`, href: n.from_profile ? `/profile/${encodeURIComponent(n.from_profile.username)}` : '/friends' };
 			case 'friend_accepted':
-				return { text: `${who} accepted your friend request`, href: n.from_profile ? `/profile/${encodeURIComponent(n.from_profile.username)}` : '/friends' };
+				return { text: `${who} follows you too — you're now friends`, href: n.from_profile ? `/profile/${encodeURIComponent(n.from_profile.username)}` : '/friends' };
 			case 'message':
 				return { text: `New message from ${who}`, href: n.ref_id ? `/messages/${n.ref_id}` : '/messages' };
 			default:

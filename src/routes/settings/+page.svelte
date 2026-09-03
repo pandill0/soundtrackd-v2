@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import Picker from '$lib/components/Picker.svelte';
-	import type { CatalogItem, FavoriteAlbum, FavoriteArtist } from '$lib/types';
 
 	let { data, form } = $props();
 	const p = $derived(data.profile);
@@ -9,23 +7,11 @@
 	// svelte-ignore state_referenced_locally
 	let tab = $state((form?.tab as string | undefined) ?? data.tab);
 	// svelte-ignore state_referenced_locally
-	let favAlbums = $state<(FavoriteAlbum | null)[]>([0, 1, 2, 3].map((i) => (p.favorite_albums ?? [])[i] ?? null));
-	// svelte-ignore state_referenced_locally
-	let favArtists = $state<(FavoriteArtist | null)[]>([0, 1, 2, 3].map((i) => (p.favorite_artists ?? [])[i] ?? null));
-	let picking = $state<{ kind: 'album' | 'artist'; slot: number } | null>(null);
-	// svelte-ignore state_referenced_locally
 	let statusLen = $state(p.status_text?.length ?? 0);
 
-	function picked(item: CatalogItem) {
-		if (!picking) return;
-		if (picking.kind === 'album') favAlbums[picking.slot] = { id: item.id, catalogId: item.id, name: item.title, artist: item.artist_name ?? '', cover: item.cover_url ?? '' };
-		else favArtists[picking.slot] = { id: item.id, catalogId: item.id, name: item.title, picture: item.cover_url ?? '' };
-		picking = null;
-	}
 	const tabs = [
 		['profile', 'Profile'],
 		['status', 'Status'],
-		['favorites', 'Favourites'],
 		['password', 'Password']
 	];
 </script>
@@ -35,7 +21,7 @@
 <div class="container page settings">
 	<div class="eyebrow">Settings</div>
 	<h1>Your profile</h1>
-	<p class="muted small">Signed in as <strong>{p.username}</strong> · {data.email}. Usernames are permanent.</p>
+	<p class="muted small">Signed in as <strong>{p.username}</strong> · {data.email}. Usernames are permanent. Favourite albums and artists are edited <a class="link" href="/profile/{encodeURIComponent(p.username)}">on your profile</a>.</p>
 
 	<nav class="tabs" aria-label="Settings sections">
 		{#each tabs as [id, label] (id)}
@@ -82,34 +68,6 @@
 				<button class="btn btn-ghost" type="submit" formaction="?/status" onclick={(e) => { const f = e.currentTarget.form!; (f.elements.namedItem('status_text') as HTMLInputElement).value = ''; (f.elements.namedItem('status_emoji') as HTMLInputElement).value = ''; }}>Clear</button>
 			</div>
 		</form>
-	{:else if tab === 'favorites'}
-		<form method="POST" action="?/favorites" class="stack card" id="favorites" use:enhance>
-			<input type="hidden" name="favorite_albums" value={JSON.stringify(favAlbums)} />
-			<input type="hidden" name="favorite_artists" value={JSON.stringify(favArtists)} />
-			<div class="eyebrow">Favourite albums</div>
-			<div class="slots">
-				{#each favAlbums as f, i (i)}
-					<div class="slot">
-						<button type="button" class="slot-btn" onclick={() => (picking = { kind: 'album', slot: i })} title={f ? `${f.name} — click to change` : 'Pick an album'}>
-							{#if f}<img class="cover" src={f.cover} alt={f.name} />{:else}<span class="plus">+</span>{/if}
-						</button>
-						{#if f}<button type="button" class="tiny muted rm" onclick={() => (favAlbums[i] = null)}>remove</button>{/if}
-					</div>
-				{/each}
-			</div>
-			<div class="eyebrow">Favourite artists</div>
-			<div class="slots">
-				{#each favArtists as f, i (i)}
-					<div class="slot">
-						<button type="button" class="slot-btn round" onclick={() => (picking = { kind: 'artist', slot: i })} title={f ? `${f.name} — click to change` : 'Pick an artist'}>
-							{#if f}<img class="cover round" src={f.picture} alt={f.name} />{:else}<span class="plus">+</span>{/if}
-						</button>
-						{#if f}<button type="button" class="tiny muted rm" onclick={() => (favArtists[i] = null)}>remove</button>{/if}
-					</div>
-				{/each}
-			</div>
-			<div><button class="btn btn-primary" type="submit">Save favourites</button></div>
-		</form>
 	{:else}
 		<form method="POST" action="?/password" class="stack card" use:enhance>
 			{#if !data.hasPassword}<p class="hint">You signed up with Google. Setting a password also lets you sign in with email.</p>{/if}
@@ -120,9 +78,6 @@
 	{/if}
 </div>
 
-{#if picking}
-	<Picker kind={picking.kind} title={picking.kind === 'album' ? 'Pick a favourite album' : 'Pick a favourite artist'} onpick={picked} onclose={() => (picking = null)} />
-{/if}
 
 <style>
 	.settings {
@@ -147,42 +102,6 @@
 	}
 	.emoji-row {
 		grid-template-columns: 90px 1fr;
-	}
-	.slots {
-		display: flex;
-		gap: 0.75rem;
-		flex-wrap: wrap;
-	}
-	.slot {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.2rem;
-	}
-	.slot-btn {
-		width: 84px;
-		height: 84px;
-		border: 1px dashed var(--border);
-		border-radius: var(--radius-sm);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-		background: var(--surface2);
-	}
-	.slot-btn.round {
-		border-radius: 50%;
-	}
-	.slot-btn .cover {
-		width: 84px;
-		height: 84px;
-	}
-	.plus {
-		color: var(--muted);
-		font-size: 1.5rem;
-	}
-	.rm:hover {
-		color: var(--danger);
 	}
 	input[type='color'] {
 		width: 44px;

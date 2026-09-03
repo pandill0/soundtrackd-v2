@@ -218,34 +218,19 @@ await as(u1, async () => {
 	ok((await rows(`select * from public.notifications where type = 'review_like'`)).length === 0, 'liking your own review does not notify you');
 });
 
-console.log('\nFriendships');
-await as(u2, async () => {
-	const f = await one(`select * from public.friend_request($1)`, [u1]);
-	ok(f.status === 'pending' && f.requester_id === u2, 'friend_request creates a pending row');
-	await fails(() => db.query(`select public.friend_request($1)`, [u2]), 'cannot friend yourself', /yourself/);
-	await fails(() => db.query(`insert into public.friendships (requester_id, addressee_id) values ($1, $2)`, [u2, u3]), 'no direct inserts into friendships', /row-level security/);
-});
-let friendshipId;
+console.log('\nFriends = mutual follows');
+ok((await one(`select public.are_friends($1, $2) as f`, [u1, u2])).f === false, 'one-way follow is not friendship');
 await as(u1, async () => {
-	const n = await one(`select * from public.notifications where type = 'friend_request'`);
-	ok(!!n && n.from_user_id === u2, 'friend_request notification delivered');
-	friendshipId = n.ref_id;
-	ok((await one(`select public.are_friends($1, $2) as f`, [u1, u2])).f === false, 'not friends yet');
+	await db.query(`insert into public.follows (follower_id, following_id) values ($1, $2)`, [u1, u2]);
+	ok((await one(`select public.are_friends($1, $2) as f`, [u1, u2])).f === true, 'following back makes friends');
+	ok(!!(await one(`select 1 from public.notifications where user_id = $1 and type = 'friend_accepted' and from_user_id = $2`, [u1, u2])), 'the follower who completed the pair is told they are now friends');
+	await fails(() => db.query(`insert into public.follows (follower_id, following_id) values ($1, $1)`, [u1]), 'cannot follow yourself', /row-level security|follows_not_self/);
+	await fails(() => db.query(`select public.friend_request($1)`, [u2]), 'friend_request no longer exists', /does not exist/);
 });
 await as(u3, async () => {
-	await db.query(`select public.friend_respond($1, true)`, [friendshipId]);
-	ok((await one(`select public.are_friends($1, $2) as f`, [u1, u2])).f === false, 'a third party cannot accept a request');
+	ok((await rows(`select * from public.friend_pairs where a = $1`, [u3])).length === 0, 'no pairs for a stranger');
 });
-await as(u1, async () => {
-	await db.query(`select public.friend_respond($1, true)`, [friendshipId]);
-	ok((await one(`select public.are_friends($1, $2) as f`, [u1, u2])).f === true, 'addressee accepts → friends');
-});
-await as(u2, async () => {
-	ok(!!(await one(`select 1 from public.notifications where type = 'friend_accepted' and from_user_id = $1`, [u1])), 'friend_accepted notification delivered');
-});
-await as(u3, async () => {
-	ok((await rows(`select * from public.friendships`)).length === 0, 'friendships are invisible to non-parties');
-});
+ok((await one(`select count(*)::int as n from public.friend_pairs where a = $1`, [u1])).n === 1, 'friend_pairs lists the pair from each side');
 
 console.log('\nMessaging (the RLS that must be right)');
 let conv;
@@ -283,7 +268,7 @@ await as(u2, async () => {
 });
 await as(u1, async () => {
 	await fails(() => db.query(`insert into public.messages (conversation_id, sender_id, body) values ($1, $2, 'hello?')`, [conv, u1]), 'blocked user cannot message', /row-level security/);
-	await fails(() => db.query(`select public.friend_request($1)`, [u2]), 'blocked user cannot re-request', /not possible/);
+	await fails(() => db.query(`insert into public.follows (follower_id, following_id) values ($1, $2)`, [u1, u2]), 'blocked user cannot follow', /row-level security/);
 	await db.query(`select public.user_unblock($1)`, [u2]);
 	ok((await one(`select public.is_blocked_between($1, $2) as b`, [u1, u2])).b === true, 'only the blocker can unblock');
 });
@@ -294,11 +279,10 @@ await as(u2, async () => {
 	ok((await rows(`select * from public.follows where follower_id = $1`, [u2])).length === 0, 'blocking removed the follow');
 	// re-establish the graph for the tests below
 	await db.query(`insert into public.follows (follower_id, following_id) values ($1, $2)`, [u2, u1]);
-	await db.query(`select public.friend_request($1)`, [u1]);
 });
 await as(u1, async () => {
-	await db.query(`select public.friend_request($1)`, [u2]);
-	ok((await one(`select public.are_friends($1, $2) as f`, [u1, u2])).f === true, 'a mutual request after unblock auto-accepts');
+	await db.query(`insert into public.follows (follower_id, following_id) values ($1, $2)`, [u1, u2]);
+	ok((await one(`select public.are_friends($1, $2) as f`, [u1, u2])).f === true, 'following each other again after unblock restores friendship');
 });
 
 console.log('\nFeed, charts, directories');
@@ -306,6 +290,7 @@ await as(u2, async () => {
 	const feed = await rows(`select * from public.activity_feed(20, null)`);
 	ok(feed.some((f) => f.kind === 'rating' && f.actor_username === 'august_test'), 'activity_feed shows a followed user\'s rating');
 	ok(feed.some((f) => f.kind === 'track_rating'), 'activity_feed includes track ratings');
+	ok(feed.some((f) => f.kind === 'friendship'), 'activity_feed includes "became friends" events');
 });
 await as(u3, async () => {
 	ok((await rows(`select * from public.activity_feed(20, null)`)).length === 0, 'empty feed when following nobody');
