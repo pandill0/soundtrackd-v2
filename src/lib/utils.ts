@@ -77,3 +77,12 @@ export function artistHref(id: string) {
 export function profileHref(username: string) {
 	return `/profile/${encodeURIComponent(username)}`;
 }
+
+/**
+ * Request a smaller rendition of a cover for grids and thumbnails. Deezer's CDN encodes the size
+ * in the path (…/1000x1000-000000-80-0-0.jpg); other URLs are returned unchanged.
+ */
+export function coverSize(url: string | null | undefined, px: 56 | 120 | 250 | 500 = 250): string | null {
+	if (!url) return null;
+	return url.replace(/\/(\d{2,4})x\1-/, `/${px}x${px}-`);
+}

@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { invalidate } from '$app/navigation';
+	import { navigating } from '$app/state';
 	import Nav from '$lib/components/Nav.svelte';
 	import MobileNav from '$lib/components/MobileNav.svelte';
 	import Footer from '$lib/components/Footer.svelte';
@@ -24,6 +25,9 @@
 	<title>Soundtrackd</title>
 </svelte:head>
 
+{#if navigating.to}
+	<div class="progress" role="progressbar" aria-label="Loading"></div>
+{/if}
 <Nav />
 <main class="site-main">
 	{@render children()}
@@ -35,5 +39,24 @@
 <style>
 	.site-main {
 		min-height: calc(100vh - var(--nav-h));
+	}
+	.progress {
+		position: fixed;
+		top: 0;
+		left: 0;
+		height: 2px;
+		width: 30%;
+		background: var(--accent);
+		box-shadow: var(--glow-green);
+		z-index: 100;
+		animation: progress 1.2s ease-in-out infinite;
+	}
+	@keyframes progress {
+		0% {
+			transform: translateX(-100%);
+		}
+		100% {
+			transform: translateX(400vw);
+		}
 	}
 </style>

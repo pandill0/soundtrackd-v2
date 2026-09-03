@@ -26,6 +26,7 @@ create table if not exists public.catalog_items (
   mbid_checked_at timestamptz                        -- last MusicBrainz lookup attempt (backfill job)
 );
 alter table public.catalog_items add column if not exists mbid_checked_at timestamptz;
+alter table public.catalog_items add column if not exists discography_at timestamptz; -- artists: last full discography fetch
 
 create index if not exists catalog_items_provider_ids_idx on public.catalog_items using gin (provider_ids jsonb_path_ops);
 create index if not exists catalog_items_genres_idx       on public.catalog_items using gin (genres);
@@ -130,6 +131,13 @@ language sql security definer set search_path = public as $$
   where id = p_id;
 $$;
 revoke execute on function public.catalog_set_mbid(uuid, uuid, text) from public, anon, authenticated;
+
+-- Stamps an artist row after its full discography has been fetched. Service role only.
+create or replace function public.catalog_touch_discography(p_id uuid) returns void
+language sql security definer set search_path = public as $$
+  update public.catalog_items set discography_at = now() where id = p_id and kind = 'artist';
+$$;
+revoke execute on function public.catalog_touch_discography(uuid) from public, anon, authenticated;
 
 -- ─── Rating writes: one function, both kinds (§9) ──────────────────────────
 -- Upsert keyed on (user, catalog item). Also fills the legacy Deezer id columns so a row

@@ -68,6 +68,7 @@ export interface CatalogItem {
 	label: string | null;
 	track_count: number | null;
 	fetched_at: string;
+	discography_at?: string | null;
 }
 
 export interface AlbumStats {

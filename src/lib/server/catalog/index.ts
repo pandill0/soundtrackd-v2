@@ -176,7 +176,8 @@ export async function getArtist(id: string): Promise<ArtistDetail | null> {
 	const deezerId = artist.provider_ids.deezer;
 	if (deezerId) {
 		try {
-			const refresh = albums.length === 0 || isStale(artist, 7);
+			const discAge = artist.discography_at ? Date.now() - new Date(artist.discography_at).getTime() : Infinity;
+			const refresh = discAge > 30 * DAY;
 			const [a, discog, top] = await Promise.all([
 				dz.dzArtist(deezerId),
 				refresh ? dz.dzArtistAlbums(deezerId, 100) : null,
@@ -186,6 +187,7 @@ export async function getArtist(id: string): Promise<ArtistDetail | null> {
 			if (discog) {
 				const inputs = await Promise.all(discog.data.map((al) => dz.albumInput({ ...al, artist: a }, artist!.id)));
 				albums = await s.upsert(inputs);
+				await s.markDiscography(artist.id);
 			}
 			topTracks = (await ensureTracks(top.data.map((t) => ({ ...t, artist: t.artist ?? a })))).tracks;
 		} catch (e) {

@@ -35,6 +35,7 @@ export interface CatalogStore {
 	unmatched(kind: CatalogKind, limit: number): Promise<CatalogRow[]>;
 	/** mbid null = looked and found nothing confident (stamps mbid_checked_at). */
 	setMbid(id: string, mbid: string | null, cover?: string | null): Promise<void>;
+	markDiscography(artistId: string): Promise<void>;
 	coverPool(limit: number): Promise<string[]>;
 	cacheGet<T>(key: string): Promise<T | null>;
 	cacheSet<T>(key: string, value: T, ttlMs: number): Promise<void>;

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CatalogItem } from '$lib/types';
 	import { formatAvg, starString } from '$lib/stars';
+	import { coverSize } from '$lib/utils';
 
 	interface Stats {
 		avg_rating?: number | null;
@@ -21,7 +22,7 @@
 <a href={link} class="album-card">
 	<div class="cover-wrap">
 		{#if item.cover_url}
-			<img class="cover" class:round={item.kind === 'artist'} src={item.cover_url} alt="" loading="lazy" />
+			<img class="cover" class:round={item.kind === 'artist'} src={coverSize(item.cover_url, 250)} alt="" loading="lazy" />
 		{:else}
 			<div class="cover placeholder" class:round={item.kind === 'artist'}></div>
 		{/if}

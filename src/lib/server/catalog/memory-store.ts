@@ -63,7 +63,8 @@ export class MemoryStore implements CatalogStore {
 				position: it.position ?? existing?.position ?? null,
 				label: it.label ?? existing?.label ?? null,
 				track_count: it.track_count ?? existing?.track_count ?? null,
-				fetched_at: new Date().toISOString()
+				fetched_at: new Date().toISOString(),
+				discography_at: existing?.discography_at ?? null
 			};
 			this.rows.set(id, row);
 			return row;
@@ -78,6 +79,10 @@ export class MemoryStore implements CatalogStore {
 			if (mbid) r.mbid = mbid;
 			if (cover) r.cover_url = cover;
 		}
+	}
+	async markDiscography(artistId: string) {
+		const r = this.rows.get(artistId);
+		if (r) r.discography_at = new Date().toISOString();
 	}
 	async coverPool(limit: number) {
 		return [...this.rows.values()]

@@ -156,6 +156,8 @@ ok((await one('select mbid from public.catalog_items where id = $1', [albumRow.i
 const byMbid = (await rows(`select * from public.catalog_upsert_items($1::jsonb)`, [JSON.stringify([{ kind: 'album', title: 'OK Computer (2017 remaster)', mbid: mb, provider_ids: { discogs: 'r1' } }])]))[0];
 ok(byMbid.id === albumRow.id && byMbid.provider_ids.discogs === 'r1' && byMbid.provider_ids.deezer === '14879699', 'upsert matches on MBID and merges provider_ids');
 ok(byMbid.title === 'OK Computer', 'a cross-provider match does not rename the record');
+await db.query(`select public.catalog_touch_discography($1)`, [artistRow.id]);
+ok(!!(await one('select discography_at from public.catalog_items where id = $1', [artistRow.id])).discography_at, 'catalog_touch_discography stamps the artist');
 await as(u1, () => fails(() => db.query(`select public.catalog_upsert_items('[]'::jsonb)`), 'users cannot call catalog_upsert_items', /permission denied/));
 await as(u1, () => fails(() => db.query(`insert into public.catalog_items (kind, title) values ('album', 'poison')`), 'users cannot insert catalog rows', /row-level security|permission denied/));
 

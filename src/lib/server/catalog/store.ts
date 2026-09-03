@@ -66,6 +66,9 @@ export class SupabaseStore implements CatalogStore {
 		const { error } = await this.db.rpc('catalog_set_mbid', { p_id: id, p_mbid: mbid, p_cover: cover });
 		if (error) throw new Error(`catalog_set_mbid: ${error.message}`);
 	}
+	async markDiscography(artistId: string) {
+		await this.db.rpc('catalog_touch_discography', { p_id: artistId });
+	}
 	async coverPool(limit: number) {
 		const { data } = await this.db
 			.from('catalog_items')
