@@ -14,14 +14,20 @@
 	const hue = $derived(hashHue(username));
 	const ring = $derived(profile ? supporterAccent(profile) : null);
 	const href = $derived(profile && link ? `/profile/${encodeURIComponent(profile.username)}` : null);
+	let broken = $state(false);
+	$effect(() => {
+		void profile?.avatar_url;
+		broken = false;
+	});
 </script>
 
 {#snippet inner()}
-	{#if profile?.avatar_url}
+	{#if profile?.avatar_url && !broken}
 		<img
 			class="avatar"
 			src={profile.avatar_url}
-			alt={username}
+			alt=""
+			onerror={() => (broken = true)}
 			width={size}
 			height={size}
 			loading="lazy"

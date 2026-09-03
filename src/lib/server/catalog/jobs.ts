@@ -4,7 +4,7 @@
  */
 import { getAdminClient } from '$lib/supabase/admin';
 import { HERO_ALBUMS } from './curated';
-import { getStore, findAlbum, findTrack, resolveLegacy } from './index';
+import { getStore, findAlbum, findArtist, findTrack, resolveLegacy } from './index';
 import { matchAlbum, matchArtist } from './musicbrainz';
 
 export interface JobResult {
@@ -152,10 +152,11 @@ export async function backfillLegacy(budgetMs = 8000): Promise<JobResult> {
 		if (touched) await admin.from('lists').update({ items }).eq('id', list.id);
 	}
 
-	const { data: profiles } = await admin.from('profiles').select('id, favorite_albums').not('favorite_albums', 'is', null);
+	const { data: profiles } = await admin.from('profiles').select('id, favorite_albums, favorite_artists');
 	for (const p of profiles ?? []) {
 		const favs = (p.favorite_albums as (Record<string, unknown> | null)[]) ?? [];
-		if (favs.every((f) => !f || f.catalogId)) continue;
+		const artists = (p.favorite_artists as (Record<string, unknown> | null)[]) ?? [];
+		if (favs.every((f) => !f || f.catalogId) && artists.every((f) => !f || f.catalogId)) continue;
 		if (!hasTime()) return { job: 'backfill-v1', processed, changed, more: true, notes };
 		let touched = false;
 		for (const f of favs) {
@@ -169,7 +170,20 @@ export async function backfillLegacy(budgetMs = 8000): Promise<JobResult> {
 				changed++;
 			}
 		}
-		if (touched) await admin.from('profiles').update({ favorite_albums: favs }).eq('id', p.id);
+		for (const f of artists) {
+			if (!f || f.catalogId) continue;
+			processed++;
+			// v1 stored Deezer artist ids (numeric); fall back to a name search otherwise
+			const legacy = /^\d+$/.test(String(f.id ?? '')) ? await resolveLegacy('artist', String(f.id)) : null;
+			const found = legacy ?? (await findArtist(String(f.name ?? '')));
+			if (found) {
+				f.catalogId = found.id;
+				f.picture = found.cover_url ?? f.picture;
+				touched = true;
+				changed++;
+			}
+		}
+		if (touched) await admin.from('profiles').update({ favorite_albums: favs, favorite_artists: artists }).eq('id', p.id);
 	}
 
 	return { job: 'backfill-v1', processed, changed, more: false, notes };

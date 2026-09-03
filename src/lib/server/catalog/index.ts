@@ -311,6 +311,21 @@ export async function findTrack(artist: string, title: string): Promise<CatalogI
 	}
 }
 
+/** Resolve an artist name to a catalogue artist, best effort. */
+export async function findArtist(name: string): Promise<CatalogItem | null> {
+	try {
+		const r = await dz.dzSearch('artist', name, 3);
+		const data = r.data as dz.DzArtist[];
+		if (!data.length) return null;
+		const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+		const best = data.find((a) => norm(a.name) === norm(name)) ?? data[0];
+		const rows = await ensureArtists([best]);
+		return pub(rows.get(best.id)!);
+	} catch {
+		return null;
+	}
+}
+
 /** Resolve a (title, artist) pair to a catalogue album, best effort. */
 export async function findAlbum(title: string, artist: string): Promise<CatalogItem | null> {
 	try {

@@ -325,6 +325,7 @@
 	}
 	.meta {
 		margin-top: 0.5rem;
+		overflow-wrap: anywhere;
 	}
 	.actions {
 		display: flex;
@@ -514,6 +515,12 @@
 	@media (max-width: 680px) {
 		.head {
 			grid-template-columns: auto minmax(0, 1fr);
+			gap: 1rem;
+		}
+		.head :global(.avatar) {
+			width: 80px !important;
+			height: 80px !important;
+			font-size: 34px !important;
 		}
 		.actions {
 			grid-column: 1 / -1;
