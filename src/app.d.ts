@@ -13,7 +13,7 @@ declare global {
 			remember?: boolean;
 		}
 		interface PageData {
-			session: Session | null;
+			session?: { access_token: string; expires_at: number | null } | null;
 			user: User | null;
 			profile: Profile | null;
 		}

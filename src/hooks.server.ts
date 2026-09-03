@@ -3,6 +3,7 @@ import { redirect } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { createSupabaseServerClient } from '$lib/supabase/server';
 import type { Profile } from '$lib/types';
+import { ensureProfile } from '$lib/server/ensure-profile';
 
 /** Pages that need a signed-in user. Everything else is public. */
 const PROTECTED = ['/dash', '/friends', '/messages', '/queue', '/notifications', '/settings', '/welcome'];
@@ -48,6 +49,10 @@ const authGuard: Handle = async ({ event, resolve }) => {
 			.eq('id', user.id)
 			.maybeSingle();
 		event.locals.profile = (data as Profile | null) ?? null;
+		// An auth account with no profile row (v1 signup bug, §5) gets a placeholder and goes to /welcome.
+		if (!event.locals.profile && !path.startsWith('/api') && !path.startsWith('/auth')) {
+			event.locals.profile = await ensureProfile(event.locals.supabase, user);
+		}
 
 		// OAuth signups arrive without a username (§5). Nothing else is reachable until it's chosen.
 		const needsUsername = event.locals.profile?.username_set === false;

@@ -17,5 +17,10 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
 				cookies: { getAll: () => data.cookies }
 			});
 
-	return { supabase, session: data.session, user: data.user, profile: data.profile };
+	const {
+		data: { session }
+	} = await supabase.auth.getSession();
+	// Only what pages need: comparing expiry and authorising realtime. Never the unverified user object.
+	const sessionLite = session ? { access_token: session.access_token, expires_at: session.expires_at ?? null } : null;
+	return { supabase, session: sessionLite, user: data.user, profile: data.profile };
 };

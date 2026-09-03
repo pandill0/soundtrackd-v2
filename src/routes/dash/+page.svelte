@@ -12,7 +12,7 @@
 	import { timeAgo } from '$lib/utils';
 
 	let { data } = $props();
-	const profile = $derived(page.data.profile!);
+	const profile = $derived(page.data.profile ?? { username: 'there', status_text: null, status_emoji: null, now_playing_id: null });
 	const hour = new Date().getHours();
 	const greeting = hour < 5 ? 'Late night' : hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
 
