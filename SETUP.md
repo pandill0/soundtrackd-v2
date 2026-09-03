@@ -32,7 +32,7 @@ Copy `.env.example` to `.env` (already done for local dev). Fill in:
   `service_role` key). Server-only. **Without it the catalogue runs in an in-memory dev mode**: you can
   browse albums/artists/search, but nothing is saved and rating fails. This is the first thing to set.
 - `JOBS_SECRET` — already generated in `.env`. Protects `/api/jobs/*`.
-- `PUBLIC_SITE_URL` — `http://localhost:5173` locally, `https://soundtrackd.org` in production.
+- `PUBLIC_SITE_URL` — only a local-dev nicety. On Netlify the platform supplies the site's address itself; you can leave this value as is.
 - Everything else is optional until the feature is switched on (§7–8 below).
 
 In production these go in Netlify → Site configuration → Environment variables.
