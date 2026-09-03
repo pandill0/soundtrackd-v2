@@ -327,12 +327,10 @@ create policy "list_likes: insert own"  on public.list_likes for insert with che
 create policy "list_likes: delete own"  on public.list_likes for delete using (user_id = auth.uid());
 
 -- ─── notifications: types + triggers ───────────────────────────────────────
-do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'notifications_type_check') then
-    alter table public.notifications add constraint notifications_type_check
-      check (type in ('follow','review_like','friend_request','friend_accepted','message')) not valid;
-  end if;
-end $$;
+-- Replace, don't skip: v1 may already have a same-named check that only allows the two old types.
+alter table public.notifications drop constraint if exists notifications_type_check;
+alter table public.notifications add constraint notifications_type_check
+  check (type in ('follow','review_like','friend_request','friend_accepted','message')) not valid;
 
 create or replace function public.notify_on_follow() returns trigger
 language plpgsql security definer set search_path = public as $$
