@@ -1,44 +1,47 @@
 <script lang="ts">
-	/** Read-only star display. Handles any half-step from 0 to 5. */
+	import { STAR_PATH, STAR_XS, starClipWidth } from '$lib/stars';
+
+	/** Read-only star display. SVG, so half stars are exact in every browser and font. */
 	let {
 		value = 0,
 		size = '1rem',
 		title = undefined
 	}: { value?: number | null; size?: string; title?: string } = $props();
 
+	const id = $props.id();
 	const v = $derived(Math.max(0, Math.min(5, Number(value) || 0)));
-	const pct = $derived((v / 5) * 100);
+	const clip = $derived(starClipWidth(v));
 </script>
 
-<span
+<svg
 	class="stars"
-	style="font-size:{size}"
+	viewBox="0 0 108 20"
+	style="height:{size};width:calc({size} * 5.4)"
 	role="img"
 	aria-label={title ?? `${v} out of 5 stars`}
-	{title}
 >
-	<span class="empty" aria-hidden="true">★★★★★</span>
-	<span class="fill" style="width:{pct}%" aria-hidden="true">★★★★★</span>
-</span>
+	{#if title}<title>{title}</title>{/if}
+	<defs>
+		<clipPath id="stars-{id}"><rect x="0" y="0" width={clip} height="20" /></clipPath>
+	</defs>
+	<g class="empty">
+		{#each STAR_XS as x (x)}<path d={STAR_PATH} transform="translate({x} 0)" />{/each}
+	</g>
+	<g class="fill" clip-path="url(#stars-{id})">
+		{#each STAR_XS as x (x)}<path d={STAR_PATH} transform="translate({x} 0)" />{/each}
+	</g>
+</svg>
 
 <style>
 	.stars {
-		position: relative;
 		display: inline-block;
-		line-height: 1;
-		letter-spacing: 0.06em;
-		white-space: nowrap;
 		vertical-align: middle;
+		flex-shrink: 0;
 	}
 	.empty {
-		color: var(--surface2);
+		fill: var(--surface2);
 	}
 	.fill {
-		position: absolute;
-		left: 0;
-		top: 0;
-		overflow: hidden;
-		color: var(--star);
-		white-space: nowrap;
+		fill: var(--star);
 	}
 </style>

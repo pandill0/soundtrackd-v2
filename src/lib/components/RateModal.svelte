@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { RATING_STEPS, ratingLabel, starString } from '$lib/stars';
+	import { RATING_STEPS, STAR_PATH, ratingLabel, starString } from '$lib/stars';
 	import { rateModal, closeRateModal } from '$lib/rate-modal.svelte';
 
+	const uid = $props.id();
 	let value = $state(0);
 	let preview = $state(0);
 	let review = $state('');
@@ -154,8 +155,11 @@
 							preview = 0;
 						}}
 					>
-						<span class="empty">★</span>
-						<span class="fill" style="width:{fill * 100}%">★</span>
+						<svg viewBox="0 0 20 20" class="glyph" class:lit={fill > 0}>
+							<defs><clipPath id="rate-{uid}-{i}"><rect x="0" y="0" width={fill * 20} height="20" /></clipPath></defs>
+							<path d={STAR_PATH} class="empty" />
+							<path d={STAR_PATH} class="fill" clip-path="url(#rate-{uid}-{i})" />
+						</svg>
 					</button>
 				{/each}
 			</div>
@@ -201,24 +205,28 @@
 		box-shadow: 0 0 0 2px rgba(74, 158, 107, 0.5);
 	}
 	.star {
-		position: relative;
-		font-size: 2.6rem;
-		line-height: 1;
 		padding: 0 0.1rem;
 		cursor: pointer;
 		user-select: none;
 		-webkit-tap-highlight-color: transparent;
+		line-height: 0;
 	}
-	.star .empty {
-		color: var(--surface2);
+	.glyph {
+		width: 2.6rem;
+		height: 2.6rem;
+		transition: transform 0.1s;
 	}
-	.star .fill {
-		position: absolute;
-		left: 0.1rem;
-		top: 0;
-		overflow: hidden;
-		color: var(--star);
-		text-shadow: var(--glow-gold);
+	.glyph.lit {
+		filter: drop-shadow(0 0 6px rgba(200, 169, 110, 0.45));
+	}
+	.star:hover .glyph {
+		transform: scale(1.08);
+	}
+	.glyph .empty {
+		fill: var(--surface2);
+	}
+	.glyph .fill {
+		fill: var(--star);
 	}
 	.label {
 		text-align: center;

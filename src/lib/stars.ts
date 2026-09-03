@@ -38,3 +38,23 @@ export function formatAvg(value: number | null | undefined, digits = 1): string 
 export function isValidRating(value: unknown): value is RatingValue {
 	return typeof value === 'number' && (RATING_STEPS as readonly number[]).includes(value);
 }
+
+/** Five-point star in a 20×20 box, used by Stars.svelte and the rating modal. */
+export const STAR_PATH = (() => {
+	const pts: string[] = [];
+	for (let k = 0; k < 10; k++) {
+		const r = k % 2 ? 4.2 : 9.6;
+		const a = -Math.PI / 2 + (k * Math.PI) / 5;
+		pts.push(`${(10 + r * Math.cos(a)).toFixed(2)},${(10 + r * Math.sin(a)).toFixed(2)}`);
+	}
+	return 'M' + pts.join('L') + 'Z';
+})();
+/** Left edge of each of the five stars in the 108-wide row (20 wide, 2 gap). */
+export const STAR_XS = [0, 22, 44, 66, 88] as const;
+/** Clip width that shows exactly `value` stars: whole stars plus the fraction of the next one. */
+export function starClipWidth(value: number): number {
+	const v = Math.max(0, Math.min(5, value));
+	const full = Math.floor(v);
+	const frac = v - full;
+	return 22 * full + (frac > 0 ? 20 * frac : 0);
+}
