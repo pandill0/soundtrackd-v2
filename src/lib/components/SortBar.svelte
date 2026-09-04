@@ -94,4 +94,10 @@
 		padding: 0.35rem 0.55rem;
 		font-size: 0.95rem;
 	}
+	@media (max-width: 580px) {
+		/* iOS Safari zooms the page on focus when a field's text is under 16px */
+		.select {
+			font-size: 16px;
+		}
+	}
 </style>
