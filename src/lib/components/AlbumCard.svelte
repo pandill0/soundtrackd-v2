@@ -55,9 +55,11 @@
 	.cover {
 		transition: transform 0.2s ease, box-shadow 0.2s ease;
 	}
-	.album-card:hover .cover {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+	@media (hover: hover) {
+		.album-card:hover .cover {
+			transform: translateY(-2px);
+			box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+		}
 	}
 	.placeholder {
 		background: linear-gradient(135deg, var(--surface2), #1c261e);

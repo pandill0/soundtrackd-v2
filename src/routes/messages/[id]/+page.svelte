@@ -184,6 +184,7 @@
 		display: flex;
 		flex-direction: column;
 		height: calc(100vh - var(--nav-h));
+		height: calc(100dvh - var(--nav-h)); /* iOS: the visible height, not the address-bar-inclusive one */
 		padding-bottom: 1rem;
 	}
 	.chat-head {
@@ -284,6 +285,7 @@
 	@media (max-width: 580px) {
 		.chat-page {
 			height: calc(100vh - var(--nav-h) - 64px);
+			height: calc(100dvh - var(--nav-h) - 64px - env(safe-area-inset-bottom, 0px));
 		}
 		.bubble {
 			max-width: 90%;

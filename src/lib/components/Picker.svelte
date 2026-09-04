@@ -67,7 +67,9 @@
 	.results {
 		margin-top: 0.75rem;
 		max-height: 50vh;
+		max-height: 50dvh;
 		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 	.pick {
 		width: 100%;

@@ -85,12 +85,14 @@
 	.following .b {
 		display: none;
 	}
-	.following:hover .a {
-		display: none;
-	}
-	.following:hover .b {
-		display: inline;
-		color: var(--danger);
+	@media (hover: hover) {
+		.following:hover .a {
+			display: none;
+		}
+		.following:hover .b {
+			display: inline;
+			color: var(--danger);
+		}
 	}
 	.menu {
 		position: absolute;

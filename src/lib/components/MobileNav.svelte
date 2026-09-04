@@ -48,7 +48,7 @@
 		right: 0;
 		bottom: 0;
 		top: auto; /* belt and braces — see §11 bug #2 */
-		height: 60px;
+		height: calc(60px + env(safe-area-inset-bottom, 0px));
 		z-index: 60;
 		background: rgba(10, 15, 11, 0.92);
 		backdrop-filter: blur(12px);
