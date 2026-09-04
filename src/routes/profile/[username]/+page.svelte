@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import Avatar from '$lib/components/Avatar.svelte';
@@ -40,8 +41,9 @@
 	});
 
 	const compact = <T,>(arr: (T | null)[]) => [...arr.filter(Boolean), ...Array(4).fill(null)].slice(0, 4) as (T | null)[];
-	function save() {
+	async function save() {
 		saving = true;
+		await tick(); // let the hidden fields pick up the new arrays before the browser reads them
 		favForm?.requestSubmit();
 	}
 	function picked(item: CatalogItem) {
@@ -141,7 +143,7 @@
 			</form>
 			<div class="favs-head">
 				<span class="eyebrow">Favourites</span>
-				{#if data.own}
+				{#if data.own && (hasFavs || editing)}
 					<span class="row">
 						{#if saving}<span class="muted tiny">Saving…</span>{/if}
 						{#if form?.error}<span class="error-msg tiny">{form.error}</span>{/if}
@@ -149,44 +151,53 @@
 					</span>
 				{/if}
 			</div>
-			<div class="fav-groups">
-				{#each [{ kind: 'album', label: 'Albums', list: favAlbums }, { kind: 'artist', label: 'Artists', list: favArtists }] as g (g.kind)}
-					{#if g.list.some(Boolean) || data.own}
-						<div class="fav-group">
-							<div class="muted tiny group-label">{g.label}</div>
-							<ol class="fav-row" class:artists={g.kind === 'artist'}>
-								{#each [0, 1, 2, 3] as i (i)}
-									{@const f = g.list[i]}
-									<li class="fav" class:empty={!f}>
+			{#if !hasFavs && !editing}
+				<div class="empty favs-empty">
+					Show people your taste: four favourite albums and four favourite artists.
+					<br /><button class="btn btn-sm btn-primary" onclick={() => (editing = true)}>Pick your favourites</button>
+				</div>
+			{:else}
+				<div class="fav-groups">
+					{#each [{ kind: 'album', label: 'Albums', list: favAlbums }, { kind: 'artist', label: 'Artists', list: favArtists }] as g (g.kind)}
+						{#if g.list.some(Boolean) || editing}
+							<div class="fav-group">
+								<div class="muted tiny group-label">{g.label}</div>
+								<ol class="fav-row" class:artists={g.kind === 'artist'}>
+									{#each [0, 1, 2, 3] as i (i)}
+										{@const f = g.list[i]}
 										{#if f}
 											{@const item = f.catalogId ? data.favMap[f.catalogId] : null}
 											{@const href = g.kind === 'album' ? albumHref(f as FavoriteAlbum) : artistHref(f as FavoriteArtist)}
 											{@const img = item?.cover_url ?? (g.kind === 'album' ? (f as FavoriteAlbum).cover : (f as FavoriteArtist).picture)}
-											<a {href} class="fav-img" title={f.name}>
-												<img class="cover" class:round={g.kind === 'artist'} src={coverSize(img, 250) ?? img} alt="" loading="lazy" />
-												<span class="rank" aria-label="Rank {i + 1}">{i + 1}</span>
-											</a>
-											<a {href} class="fav-name truncate">{f.name}</a>
-											{#if g.kind === 'album'}<div class="fav-sub muted truncate">{(f as FavoriteAlbum).artist}</div>{/if}
-											{#if editing}
-												<div class="ctl">
-													<button class="btn btn-xs btn-ghost" onclick={() => move(g.kind as Kind, i, -1)} disabled={i === 0} aria-label="Move up">◀</button>
-													<button class="btn btn-xs btn-ghost" onclick={() => picking = { kind: g.kind as Kind, slot: i }} aria-label="Replace">↻</button>
-													<button class="btn btn-xs btn-ghost" onclick={() => move(g.kind as Kind, i, 1)} disabled={i === 3 || !g.list[i + 1]} aria-label="Move down">▶</button>
-													<button class="btn btn-xs btn-danger" onclick={() => remove(g.kind as Kind, i)} aria-label="Remove">✕</button>
-												</div>
-											{/if}
-										{:else if data.own}
-											<button class="fav-img add" class:round={g.kind === 'artist'} onclick={() => (picking = { kind: g.kind as Kind, slot: i })} title="Add a favourite {g.kind}">+</button>
-											<span class="fav-name muted">Add {g.kind}</span>
+											<li class="fav">
+												<a {href} class="fav-img" title={f.name}>
+													<img class="cover" class:round={g.kind === 'artist'} src={coverSize(img, 250) ?? img} alt="" loading="lazy" />
+													<span class="rank" aria-label="Rank {i + 1}">{i + 1}</span>
+												</a>
+												<a {href} class="fav-name truncate">{f.name}</a>
+												{#if g.kind === 'album'}<div class="fav-sub muted truncate">{(f as FavoriteAlbum).artist}</div>{/if}
+												{#if editing}
+													<div class="ctl">
+														<button class="btn btn-xs btn-ghost" onclick={() => move(g.kind as Kind, i, -1)} disabled={i === 0} aria-label="Move up" title="Move up">◀</button>
+														<button class="btn btn-xs btn-ghost" onclick={() => (picking = { kind: g.kind as Kind, slot: i })} aria-label="Replace" title="Replace">↻</button>
+														<button class="btn btn-xs btn-ghost" onclick={() => move(g.kind as Kind, i, 1)} disabled={i === 3 || !g.list[i + 1]} aria-label="Move down" title="Move down">▶</button>
+														<button class="btn btn-xs btn-danger" onclick={() => remove(g.kind as Kind, i)} aria-label="Remove" title="Remove">✕</button>
+													</div>
+												{/if}
+											</li>
+										{:else if editing}
+											<li class="fav empty">
+												<button class="fav-img add" class:round={g.kind === 'artist'} onclick={() => (picking = { kind: g.kind as Kind, slot: i })} title="Add a favourite {g.kind}">+</button>
+												<span class="fav-name muted">Add {g.kind}</span>
+											</li>
 										{/if}
-									</li>
-								{/each}
-							</ol>
-						</div>
-					{/if}
-				{/each}
-			</div>
+									{/each}
+								</ol>
+							</div>
+						{/if}
+					{/each}
+				</div>
+			{/if}
 		</section>
 	{/if}
 
@@ -376,6 +387,9 @@
 		align-items: center;
 		justify-content: space-between;
 		margin-bottom: 0.75rem;
+	}
+	.favs-empty {
+		padding: 1.5rem 1rem;
 	}
 	.fav-groups {
 		display: grid;
