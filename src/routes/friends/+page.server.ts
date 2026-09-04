@@ -1,23 +1,24 @@
 import type { PageServerLoad } from './$types';
-import type { ProfileCard } from '$lib/types';
-
-type Card = ProfileCard & { status_text?: string | null; status_emoji?: string | null };
-type FollowRow = { created_at: string; profile: Card | Card[] };
-const one = (p: Card | Card[]) => (Array.isArray(p) ? p[0] : p);
+import { profileCards } from '$lib/server/profiles';
 
 /** Friends = mutual follows (Letterboxd model). One-way follows are listed either side of that. */
 export const load: PageServerLoad = async ({ locals }) => {
 	const me = locals.user!.id;
 	const sb = locals.supabase;
-	const cols = 'id, username, avatar_url, accent_color, supporter_until, status_text, status_emoji';
 	const [{ data: following }, { data: followers }, { data: live }, { data: blocks }] = await Promise.all([
-		sb.from('follows').select(`created_at, profile:profiles!following_id(${cols})`).eq('follower_id', me).order('created_at', { ascending: false }),
-		sb.from('follows').select(`created_at, profile:profiles!follower_id(${cols})`).eq('following_id', me).order('created_at', { ascending: false }),
+		sb.from('follows').select('following_id, created_at').eq('follower_id', me).order('created_at', { ascending: false }),
+		sb.from('follows').select('follower_id, created_at').eq('following_id', me).order('created_at', { ascending: false }),
 		sb.rpc('friends_now_playing'),
-		sb.from('friendships').select(`requester_id, addressee_id, requester:profiles!requester_id(${cols}), addressee:profiles!addressee_id(${cols})`).eq('status', 'blocked').eq('blocked_by', me)
+		sb.from('friendships').select('requester_id, addressee_id').eq('status', 'blocked').eq('blocked_by', me)
 	]);
-	const iFollow = ((following as unknown as FollowRow[]) ?? []).map((r) => ({ ...one(r.profile), since: r.created_at }));
-	const followMe = ((followers as unknown as FollowRow[]) ?? []).map((r) => ({ ...one(r.profile), since: r.created_at }));
+	const fRows = (following as { following_id: string; created_at: string }[]) ?? [];
+	const rRows = (followers as { follower_id: string; created_at: string }[]) ?? [];
+	const bRows = (blocks as { requester_id: string; addressee_id: string }[]) ?? [];
+	const blockedIds = bRows.map((b) => (b.requester_id === me ? b.addressee_id : b.requester_id));
+	const cards = await profileCards(sb, [...fRows.map((r) => r.following_id), ...rRows.map((r) => r.follower_id), ...blockedIds]);
+
+	const iFollow = fRows.map((r) => ({ ...cards[r.following_id], since: r.created_at })).filter((p) => p.id);
+	const followMe = rRows.map((r) => ({ ...cards[r.follower_id], since: r.created_at })).filter((p) => p.id);
 	const followingIds = new Set(iFollow.map((p) => p.id));
 	const followerIds = new Set(followMe.map((p) => p.id));
 	const liveMap = Object.fromEntries((((live as Record<string, unknown>[]) ?? []).map((l) => [l.id as string, l])));
@@ -26,6 +27,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 		friends: iFollow.filter((p) => followerIds.has(p.id)).map((p) => ({ ...p, live: liveMap[p.id] ?? null })),
 		followsYou: followMe.filter((p) => !followingIds.has(p.id)),
 		youFollow: iFollow.filter((p) => !followerIds.has(p.id)),
-		blocked: ((blocks as unknown as { requester_id: string; requester: Card | Card[]; addressee: Card | Card[] }[]) ?? []).map((b) => one(b.requester_id === me ? b.addressee : b.requester))
+		blocked: blockedIds.map((id) => cards[id]).filter(Boolean)
 	};
 };

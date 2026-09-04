@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getItems } from '$lib/server/catalog';
+import { profileCards } from '$lib/server/profiles';
 import { isUuid } from '$lib/utils';
 import type { Message, ProfileCard } from '$lib/types';
 
@@ -11,12 +12,10 @@ export const load: PageServerLoad = async ({ params, locals, depends }) => {
 	const me = locals.user!.id;
 
 	// RLS: only members can see the conversation and its members.
-	const { data: members } = await sb
-		.from('conversation_members')
-		.select('user_id, profile:profiles!user_id(id, username, avatar_url, accent_color, supporter_until, status_text, status_emoji, last_seen_at)')
-		.eq('conversation_id', params.id);
+	const { data: members } = await sb.from('conversation_members').select('user_id').eq('conversation_id', params.id);
 	if (!members?.length) error(404, 'Conversation not found');
-	const other = (members as unknown as { user_id: string; profile: ProfileCard & { last_seen_at?: string | null } }[]).find((m) => m.user_id !== me)?.profile ?? null;
+	const otherId = (members as { user_id: string }[]).find((m) => m.user_id !== me)?.user_id;
+	const other = otherId ? ((await profileCards(sb, [otherId]))[otherId] as (ProfileCard & { last_seen_at?: string | null }) | undefined) : undefined;
 	if (!other) error(404, 'Conversation not found');
 
 	const [{ data: msgs }, { data: block }] = await Promise.all([

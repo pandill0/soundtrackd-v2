@@ -1,17 +1,15 @@
 import type { PageServerLoad } from './$types';
+import { profileCards } from '$lib/server/profiles';
 import type { Notification } from '$lib/types';
 
 export const load: PageServerLoad = async ({ locals, depends }) => {
 	depends('app:unread');
 	const me = locals.user!.id;
 	const sb = locals.supabase;
-	const { data } = await sb
-		.from('notifications')
-		.select('*, from_profile:profiles!from_user_id(id, username, avatar_url, accent_color, supporter_until)')
-		.eq('user_id', me)
-		.order('created_at', { ascending: false })
-		.limit(80);
-	const items = ((data as unknown as Notification[]) ?? []).map((n) => ({ ...n, from_profile: Array.isArray(n.from_profile) ? n.from_profile[0] : n.from_profile }));
+	const { data } = await sb.from('notifications').select('*').eq('user_id', me).order('created_at', { ascending: false }).limit(80);
+	const rows = ((data as Notification[]) ?? []);
+	const people = await profileCards(sb, rows.map((n) => n.from_user_id));
+	const items = rows.map((n) => ({ ...n, from_profile: n.from_user_id ? (people[n.from_user_id] ?? null) : null }));
 
 	// Resolve which album a liked review belongs to.
 	const likeRefs = items.filter((n) => n.type === 'review_like' && n.ref_id).map((n) => n.ref_id as string);

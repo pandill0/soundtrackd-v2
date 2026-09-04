@@ -1,20 +1,18 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getItems } from '$lib/server/catalog';
+import { profileCards } from '$lib/server/profiles';
 import { isUuid } from '$lib/utils';
 import type { List, ListItem, ProfileCard } from '$lib/types';
 
 export const load: PageServerLoad = async ({ params, locals, url }) => {
 	if (!isUuid(params.id)) error(404, 'List not found');
 	const sb = locals.supabase;
-	const { data } = await sb
-		.from('lists')
-		.select('*, profiles:profiles!user_id(id, username, avatar_url, accent_color, supporter_until)')
-		.eq('id', params.id)
-		.maybeSingle();
+	const { data } = await sb.from('lists').select('*').eq('id', params.id).maybeSingle();
 	if (!data) error(404, 'List not found');
-	const list = data as unknown as List & { profiles: ProfileCard | ProfileCard[] };
-	const owner = Array.isArray(list.profiles) ? list.profiles[0] : list.profiles;
+	const list = data as unknown as List;
+	const owner = (await profileCards(sb, [list.user_id]))[list.user_id] as ProfileCard | undefined;
+	if (!owner) error(404, 'List not found');
 	const own = locals.user?.id === list.user_id;
 
 	const [{ count }, liked] = await Promise.all([
@@ -27,7 +25,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 	const catalog = ids.length ? await getItems(ids) : [];
 
 	return {
-		list: { ...list, items, profiles: undefined },
+		list: { ...list, items },
 		owner,
 		own,
 		editing: own && url.searchParams.get('edit') === '1',
