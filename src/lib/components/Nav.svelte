@@ -56,7 +56,7 @@
 							<a class="item" role="menuitem" href="/profile/{encodeURIComponent(profile.username)}">Your profile</a>
 							<a class="item" role="menuitem" href="/queue">Listen queue</a>
 							<a class="item" role="menuitem" href="/settings">Settings</a>
-							<form method="POST" action="/auth/signout" onsubmit={() => (menuOpen = false)}><button class="item" role="menuitem" type="submit">Sign out</button></form>
+							<form method="POST" action="/auth/signout"><button class="item" role="menuitem" type="submit">Sign out</button></form>
 						</div>
 					{/if}
 				</div>
