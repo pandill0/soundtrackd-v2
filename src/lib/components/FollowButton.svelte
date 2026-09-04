@@ -66,7 +66,8 @@
 		<button class="btn btn-ghost btn-icon more" class:btn-sm={small} onclick={(e) => { e.stopPropagation(); open = !open; }} aria-label="More" aria-expanded={open}>⋯</button>
 	{/if}
 	{#if open}
-		<div class="menu card tight" role="menu">
+		<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
+		<div class="menu card tight" role="menu" onclick={(e) => e.stopPropagation()}>
 			{#if friends}<a class="item" role="menuitem" href="/messages/new?to={userId}">Message</a>{/if}
 			{#if on}<button class="item" role="menuitem" onclick={() => setFollow(false)}>Unfollow</button>{/if}
 			<button class="item danger" role="menuitem" onclick={() => block('block')}>Block</button>

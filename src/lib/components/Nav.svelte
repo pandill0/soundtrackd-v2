@@ -51,11 +51,12 @@
 						<span class="caret" aria-hidden="true">▾</span>
 					</button>
 					{#if menuOpen}
-						<div class="menu card tight" role="menu">
+						<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
+						<div class="menu card tight" role="menu" onclick={(e) => e.stopPropagation()}>
 							<a class="item" role="menuitem" href="/profile/{encodeURIComponent(profile.username)}">Your profile</a>
 							<a class="item" role="menuitem" href="/queue">Listen queue</a>
 							<a class="item" role="menuitem" href="/settings">Settings</a>
-							<form method="POST" action="/auth/signout"><button class="item" role="menuitem" type="submit">Sign out</button></form>
+							<form method="POST" action="/auth/signout" onsubmit={() => (menuOpen = false)}><button class="item" role="menuitem" type="submit">Sign out</button></form>
 						</div>
 					{/if}
 				</div>
