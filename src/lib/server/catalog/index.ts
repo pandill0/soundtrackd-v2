@@ -9,7 +9,7 @@ import { getAdminClient } from '$lib/supabase/admin';
 import type { CatalogItem, CatalogKind } from '$lib/types';
 import { TtlCache, mapLimit } from './cache';
 import * as dz from './deezer';
-import { chartTopTracks } from './lastfm';
+import { chartTopArtists, chartTopTracks } from './lastfm';
 import { MemoryStore } from './memory-store';
 import { SupabaseStore } from './store';
 import type { AlbumDetail, ArtistDetail, CatalogItemInput, CatalogRow, CatalogStore, SearchResults, TrackDetail } from './types';
@@ -291,6 +291,40 @@ export async function trendingAlbums(limit = 12): Promise<CatalogItem[]> {
 export async function albumsByArtist(artistId: string, exclude?: string, limit = 6): Promise<CatalogItem[]> {
 	const rows = await getStore().albumsOf(artistId);
 	return pubAll(rows.filter((r) => r.id !== exclude).slice(0, limit));
+}
+
+/**
+ * Recent releases from the artists the world is listening to most right now (Last.fm chart →
+ * each artist's newest Deezer releases). Cached server-side for 6 hours.
+ */
+export async function newReleasesFromBigArtists(limit = 12, days = 120): Promise<CatalogItem[]> {
+	const s = getStore();
+	const key = `newreleases:${limit}:${days}`;
+	const cached = await s.cacheGet<string[]>(key);
+	if (cached?.length) return pubAll(await s.getByIds(cached)).sort((a, b) => cached.indexOf(a.id) - cached.indexOf(b.id));
+	const names = await chartTopArtists(20);
+	if (!names.length) return [];
+	const cutoff = Date.now() - days * DAY;
+	const found = await mapLimit(names, 3, async (name) => {
+		try {
+			const r = await dz.dzSearch('artist', name, 1);
+			const a = r.data[0] as dz.DzArtist | undefined;
+			if (!a) return [] as dz.DzAlbum[];
+			const albums = await dz.dzArtistAlbums(String(a.id), 8);
+			return albums.data
+				.filter((al) => al.release_date && al.release_date !== '0000-00-00' && new Date(al.release_date).getTime() >= cutoff)
+				.map((al) => ({ ...al, artist: a }));
+		} catch {
+			return [] as dz.DzAlbum[];
+		}
+	});
+	const albums = dedupe(found.flat(), (a) => a.id)
+		.sort((x, y) => (y.release_date ?? '').localeCompare(x.release_date ?? ''))
+		.slice(0, limit);
+	if (!albums.length) return [];
+	const rows = await ensureAlbums(albums);
+	await s.cacheSet(key, rows.map((r) => r.id), 6 * 60 * 60 * 1000);
+	return pubAll(rows);
 }
 
 /** Random pool of album covers for the landing-page hero background. */

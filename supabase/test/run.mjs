@@ -326,6 +326,23 @@ await as(u1, async () => {
 	ok(recent.length === 1 && recent[0].username === 'second_user', 'recent_reviews');
 });
 
+console.log('\nCharts sections');
+const wk = await rows(`select * from public.charts_week(7, 1, 10)`);
+ok(wk.length === 1 && wk[0].title === 'OK Computer' && wk[0].week_count === 2, 'charts_week ranks this week\'s rated albums');
+await as(u2, async () => {
+	const tf = await rows(`select * from public.trending_with_friends(14, 10)`);
+	ok(tf.length === 1 && tf[0].friend_count === 1 && tf[0].friends.length === 1 && tf[0].friends[0].username === 'august_test', 'trending_with_friends shows what people you follow rated');
+});
+await as(u3, async () => {
+	ok((await rows(`select * from public.trending_with_friends(14, 10)`)).length === 0, 'trending_with_friends is empty when following nobody');
+});
+await as(u1, async () => {
+	const ar = await rows(`select * from public.artists_you_rated(10)`);
+	ok(ar.length === 1 && ar[0].title === 'Radiohead' && ar[0].rating_count === 1, 'artists_you_rated groups by artist');
+});
+const st = (await one(`select public.site_stats() as s`)).s;
+ok(st.total === 3 && st.albums === 2 && st.songs === 1 && st.today === 3 && st.members === 3 && st.distribution.length === 10, `site_stats → ${JSON.stringify({ total: st.total, today: st.today, members: st.members })}`);
+
 console.log('\nListen queue + presence');
 await as(u1, async () => {
 	await db.query(`insert into public.listen_queue (user_id, catalog_item_id, note) values ($1, $2, 'rec from sam')`, [u1, albumRow.id]);
