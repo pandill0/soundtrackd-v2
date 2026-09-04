@@ -1,8 +1,15 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { invalidate } from '$app/navigation';
 	import Avatar from '$lib/components/Avatar.svelte';
 	import { timeAgo } from '$lib/utils';
 
 	let { data } = $props();
+
+	// The server marked everything read while loading this page; refresh the nav badge to match.
+	onMount(() => {
+		if (data.hadUnread) invalidate('app:unread');
+	});
 
 	const describe = (n: (typeof data.items)[number]) => {
 		const who = n.from_profile?.username ?? 'Someone';

@@ -21,8 +21,9 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
 		for (const row of r ?? []) albums[row.id] = row;
 	}
 
-	// Opening the page marks everything read (the badge clears on the next navigation).
-	if (items.some((n) => !n.read)) await sb.from('notifications').update({ read: true }).eq('user_id', me).eq('read', false);
+	// Opening the page marks everything read; the page then refreshes the nav badge.
+	const hadUnread = items.some((n) => !n.read);
+	if (hadUnread) await sb.from('notifications').update({ read: true }).eq('user_id', me).eq('read', false);
 
-	return { items, albums };
+	return { items, albums, hadUnread };
 };
