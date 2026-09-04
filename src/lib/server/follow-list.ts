@@ -10,7 +10,7 @@ export async function loadFollowList(locals: App.Locals, username: string, which
 	const other = which === 'followers' ? 'following_id' : 'follower_id';
 	const { data: rows } = await sb
 		.from('follows')
-		.select(`created_at, profile:profiles!follows_${col}_fkey ( id, username, avatar_url, accent_color, supporter_until, status_text, status_emoji )`)
+		.select(`created_at, profile:profiles!${col} ( id, username, avatar_url, accent_color, supporter_until, status_text, status_emoji )`)
 		.eq(other, profile.id)
 		.order('created_at', { ascending: false })
 		.limit(200);

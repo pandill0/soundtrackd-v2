@@ -11,10 +11,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const sb = locals.supabase;
 	const cols = 'id, username, avatar_url, accent_color, supporter_until, status_text, status_emoji';
 	const [{ data: following }, { data: followers }, { data: live }, { data: blocks }] = await Promise.all([
-		sb.from('follows').select(`created_at, profile:profiles!follows_following_id_fkey(${cols})`).eq('follower_id', me).order('created_at', { ascending: false }),
-		sb.from('follows').select(`created_at, profile:profiles!follows_follower_id_fkey(${cols})`).eq('following_id', me).order('created_at', { ascending: false }),
+		sb.from('follows').select(`created_at, profile:profiles!following_id(${cols})`).eq('follower_id', me).order('created_at', { ascending: false }),
+		sb.from('follows').select(`created_at, profile:profiles!follower_id(${cols})`).eq('following_id', me).order('created_at', { ascending: false }),
 		sb.rpc('friends_now_playing'),
-		sb.from('friendships').select(`requester_id, addressee_id, requester:profiles!friendships_requester_id_fkey(${cols}), addressee:profiles!friendships_addressee_id_fkey(${cols})`).eq('status', 'blocked').eq('blocked_by', me)
+		sb.from('friendships').select(`requester_id, addressee_id, requester:profiles!requester_id(${cols}), addressee:profiles!addressee_id(${cols})`).eq('status', 'blocked').eq('blocked_by', me)
 	]);
 	const iFollow = ((following as unknown as FollowRow[]) ?? []).map((r) => ({ ...one(r.profile), since: r.created_at }));
 	const followMe = ((followers as unknown as FollowRow[]) ?? []).map((r) => ({ ...one(r.profile), since: r.created_at }));

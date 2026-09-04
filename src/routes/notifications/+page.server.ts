@@ -7,7 +7,7 @@ export const load: PageServerLoad = async ({ locals, depends }) => {
 	const sb = locals.supabase;
 	const { data } = await sb
 		.from('notifications')
-		.select('*, from_profile:profiles!notifications_from_user_id_fkey(id, username, avatar_url, accent_color, supporter_until)')
+		.select('*, from_profile:profiles!from_user_id(id, username, avatar_url, accent_color, supporter_until)')
 		.eq('user_id', me)
 		.order('created_at', { ascending: false })
 		.limit(80);

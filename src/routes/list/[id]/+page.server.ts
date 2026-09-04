@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 	const sb = locals.supabase;
 	const { data } = await sb
 		.from('lists')
-		.select('*, profiles:profiles!lists_user_id_fkey(id, username, avatar_url, accent_color, supporter_until)')
+		.select('*, profiles:profiles!user_id(id, username, avatar_url, accent_color, supporter_until)')
 		.eq('id', params.id)
 		.maybeSingle();
 	if (!data) error(404, 'List not found');
