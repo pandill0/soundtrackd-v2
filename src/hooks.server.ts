@@ -62,11 +62,18 @@ const authGuard: Handle = async ({ event, resolve }) => {
 
 		// Logged-in users never see the marketing page (§8.2).
 		if (path === '/' || path === '/login') redirect(303, '/dash');
+	} else if (path === '/dash') {
+		// Signed out: the intro page is the home page (§8.2).
+		redirect(303, '/');
 	} else if (PROTECTED.some((p) => path === p || path.startsWith(p + '/'))) {
 		redirect(303, `/login?next=${encodeURIComponent(path + event.url.search)}`);
 	}
 
-	return resolve(event);
+	const response = await resolve(event);
+	// Personalised pages must never be served from a cache (including the browser's back/forward
+	// cache): after signing out, Back should not resurrect the dashboard.
+	if (user && !path.startsWith('/api')) response.headers.set('cache-control', 'private, no-store');
+	return response;
 };
 
 export const handle = sequence(supabase, authGuard);
