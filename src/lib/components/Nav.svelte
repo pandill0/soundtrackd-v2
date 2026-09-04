@@ -52,7 +52,7 @@
 					</button>
 					{#if menuOpen}
 						<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
-						<div class="menu card tight" role="menu" onclick={(e) => e.stopPropagation()}>
+						<div class="menu card tight" role="menu" tabindex="-1" onclick={(e) => e.stopPropagation()}>
 							<a class="item" role="menuitem" href="/profile/{encodeURIComponent(profile.username)}">Your profile</a>
 							<a class="item" role="menuitem" href="/queue">Listen queue</a>
 							<a class="item" role="menuitem" href="/settings">Settings</a>
