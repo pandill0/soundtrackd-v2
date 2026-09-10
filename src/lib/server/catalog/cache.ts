@@ -1,4 +1,4 @@
-/** Tiny in-memory TTL cache. Lives for the life of the server process (a warm Netlify function). */
+/** Tiny in-memory TTL cache. Lives for the life of the server process (a warm Worker isolate). */
 export class TtlCache<V> {
 	private map = new Map<string, { v: V; exp: number }>();
 	constructor(private ttlMs: number, private max = 500) {}

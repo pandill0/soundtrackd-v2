@@ -1,6 +1,6 @@
 /**
  * Background jobs (§7). Each runs inside a time budget because they execute in a serverless
- * function; the caller (netlify/functions/scheduled-jobs.mts) loops while `more` is true.
+ * function; the caller (the cron handler in cloudflare/worker.ts) runs one batch per job per tick and comes back while `more` is true.
  */
 import { getAdminClient } from '$lib/supabase/admin';
 import { HERO_ALBUMS } from './curated';
@@ -27,7 +27,7 @@ export async function backfillMbids(budgetMs = 8000): Promise<JobResult> {
 	let processed = 0;
 	let changed = 0;
 	const notes: string[] = [];
-	const albums = await s.unmatched('album', 20);
+	const albums = await s.unmatched('album', 12);
 	for (const row of albums) {
 		if (!hasTime()) break;
 		processed++;
@@ -39,7 +39,7 @@ export async function backfillMbids(budgetMs = 8000): Promise<JobResult> {
 			notes.push(`${row.title}: ${(e as Error).message}`);
 		}
 	}
-	const artists = hasTime() ? await s.unmatched('artist', 10) : [];
+	const artists = hasTime() ? await s.unmatched('artist', 6) : [];
 	for (const row of artists) {
 		if (!hasTime()) break;
 		processed++;
@@ -61,7 +61,7 @@ export async function warmCatalog(budgetMs = 8000): Promise<JobResult> {
 	const start = (await s.cacheGet<number>('warm:cursor')) ?? 0;
 	let i = start;
 	let changed = 0;
-	while (i < HERO_ALBUMS.length && hasTime()) {
+	while (i < HERO_ALBUMS.length && i - start < 12 && hasTime()) {
 		const { title, artist } = HERO_ALBUMS[i];
 		if (await findAlbum(title, artist)) changed++;
 		i++;
@@ -202,7 +202,7 @@ export async function pollListenBrainz(budgetMs = 8000): Promise<JobResult> {
 	let changed = 0;
 	const notes: string[] = [];
 	for (const p of profiles ?? []) {
-		if (!hasTime()) return { job: 'listenbrainz', processed, changed, more: true, notes };
+		if (!hasTime() || processed >= 15) return { job: 'listenbrainz', processed, changed, more: true, notes };
 		processed++;
 		try {
 			const res = await fetch(`https://api.listenbrainz.org/1/user/${encodeURIComponent(p.listenbrainz_user)}/playing-now`, {

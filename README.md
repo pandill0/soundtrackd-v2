@@ -8,7 +8,7 @@ This is v2 — a from-scratch rebuild of the vanilla-HTML v1. The full product s
 
 ## Stack
 
-SvelteKit (Svelte 5) · TypeScript · Supabase (Postgres + Auth + Realtime) · Netlify.
+SvelteKit (Svelte 5) · TypeScript · Supabase (Postgres + Auth + Realtime) · Cloudflare Workers.
 Catalogue identity is MusicBrainz (CC0); Deezer provides search and artwork during the beta.
 
 ## Layout
@@ -30,7 +30,7 @@ src/
 supabase/
   migrations/                 seven idempotent SQL files — the schema, RLS, triggers, aggregates
   test/run.mjs                npm run db:test — applies them to PGlite and asserts behaviour
-netlify/functions/            scheduled job runner
+cloudflare/worker.ts          Worker entry: SvelteKit fetch handler plus the cron job runner
 ```
 
 ## Working on it
