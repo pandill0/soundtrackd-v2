@@ -1,0 +1,23 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "soundtrackd",
+	// Custom entry so we can add a cron (scheduled) handler next to SvelteKit's fetch handler.
+	"main": "cloudflare/worker.ts",
+	"compatibility_date": "2026-09-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"observability": { "enabled": true },
+	// Background jobs (ListenBrainz poll, catalogue warming, MusicBrainz matching) every 10 minutes.
+	"triggers": { "crons": ["*/10 * * * *"] },
+	// Non-secret runtime variables. Secrets (SUPABASE_SECRET_KEY, JOBS_SECRET, ...) are set in the
+	// Cloudflare dashboard under Settings → Variables and Secrets, never here.
+	"vars": {
+		"PUBLIC_SUPABASE_URL": "https://cmjemqmxnpusluzyiwyj.supabase.co",
+		"PUBLIC_SUPABASE_KEY": "sb_publishable_2w5SVBrYjBEWbJ8Rw3GRbQ_Z-EVXQ41",
+		"PUBLIC_SITE_URL": "https://soundtrackd.org",
+		"MUSICBRAINZ_CONTACT": "hello@soundtrackd.org"
+	}
+}

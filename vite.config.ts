@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-netlify';
+import adapter from '@sveltejs/adapter-cloudflare';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
@@ -10,8 +10,9 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			// Netlify hosts the site (REBUILD-SPEC §7). Server code becomes one Netlify Function.
-			adapter: adapter({ edge: false, split: false })
+			// Cloudflare Workers hosts the site. Server code becomes one Worker; static files are
+			// served by Workers Static Assets. See wrangler.jsonc and cloudflare/worker.ts.
+			adapter: adapter()
 		})
 	]
 });

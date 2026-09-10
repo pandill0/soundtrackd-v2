@@ -1,6 +1,6 @@
 /**
  * Single source of truth for public configuration (REBUILD-SPEC §2, §6).
- * Values come from environment variables — locally from .env, in production from Netlify.
+ * Values come from environment variables — locally from .env, in production from the Cloudflare Worker's variables and secrets.
  * Never add a secret here: everything in this file can end up in the browser.
  */
 import { env } from '$env/dynamic/public';

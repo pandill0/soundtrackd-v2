@@ -9,7 +9,7 @@ provider settings, hosting, and the one-time data backfill. Work through it top 
 | Layer | Choice | Why |
 |---|---|---|
 | Framework | **SvelteKit** (Svelte 5) + TypeScript | Components + router + server-side loading; `.svelte` files look like the HTML/CSS/JS you already know (§2) |
-| Hosting | **Netlify** (unchanged) | `netlify.toml` builds it; server code becomes one Netlify Function |
+| Hosting | **Cloudflare Workers** (moved off Netlify, Sept 2026) | `wrangler.jsonc` configures it; server code becomes one Worker, static files are served by Workers Static Assets |
 | Database/auth | **Supabase, the existing project** (`cmjemqmxnpusluzyiwyj`) | Keeps the 5 accounts and ~250 ratings; migrations reconcile against what's live |
 | Catalogue | **MusicBrainz IDs as identity, Deezer as the beta search/artwork provider**, all behind `src/lib/server/catalog/` | §6.1 — no page ever sees a provider id; the Cloudflare worker is retired |
 | Payments | **Lemon Squeezy** hosted checkout + webhook | Merchant of record handles international tax (§13.2) |
@@ -32,10 +32,10 @@ Copy `.env.example` to `.env` (already done for local dev). Fill in:
   `service_role` key). Server-only. **Without it the catalogue runs in an in-memory dev mode**: you can
   browse albums/artists/search, but nothing is saved and rating fails. This is the first thing to set.
 - `JOBS_SECRET` — already generated in `.env`. Protects `/api/jobs/*`.
-- `PUBLIC_SITE_URL` — only a local-dev nicety. On Netlify the platform supplies the site's address itself; you can leave this value as is.
+- `PUBLIC_SITE_URL` — `http://localhost:5173` locally. Production gets `https://soundtrackd.org` from `wrangler.jsonc`; the cron uses it to call the app's own job routes.
 - Everything else is optional until the feature is switched on (§7–8 below).
 
-In production these go in Netlify → Site configuration → Environment variables.
+In production the secrets go on the Worker: Cloudflare dashboard → Workers & Pages → soundtrackd → Settings → Variables and Secrets. Non-secret values already live in `wrangler.jsonc`.
 
 ## 2. Apply the database migrations
 
@@ -72,7 +72,7 @@ Dashboard → Authentication:
 
 1. **URL Configuration** → Site URL `https://soundtrackd.org`. Redirect URLs — add all of:
    `http://localhost:5173/auth/callback`, `https://soundtrackd.org/auth/callback`,
-   `https://*.netlify.app/auth/callback` (deploy previews).
+   `https://*.workers.dev/auth/callback` (the Worker's own address and preview URLs).
 2. **Providers → Google** (§5 — ship this first): create OAuth credentials in Google Cloud Console
    (Web application; authorised redirect URI is shown in the Supabase Google provider panel, it's
    `https://cmjemqmxnpusluzyiwyj.supabase.co/auth/v1/callback`). Paste client id + secret, enable.
@@ -102,28 +102,10 @@ curl -X POST http://localhost:5173/api/jobs/backfill-v1 -H "Authorization: Beare
 ```
 
 Then warm the landing-page hero pool (curated list → catalogue) the same way with `warm-catalog`,
-and start MusicBrainz matching with `mbid-backfill`. In production the scheduled Netlify function
-(`netlify/functions/scheduled-jobs.mts`) runs `listenbrainz`, `warm-catalog` and `mbid-backfill`
-every 10 minutes; it needs `JOBS_SECRET` in Netlify's env. Run `backfill-v1` by hand once against the
+and start MusicBrainz matching with `mbid-backfill`. In production a Cloudflare cron trigger (`cloudflare/worker.ts`, schedule in `wrangler.jsonc`) runs
+`listenbrainz`, `warm-catalog` and `mbid-backfill` every 10 minutes; it needs `JOBS_SECRET` set as a Worker secret. Run `backfill-v1` by hand once against the
 production URL after deploying.
 
-## 6. Deploy
-
-First the code needs to be on GitHub, because Netlify deploys from a Git repository:
-
-1. Create an empty repo at https://github.com/new (name it `soundtrackd-v2`, no README).
-2. Connect and push from the project folder:
-   ```bash
-   git remote add origin https://github.com/pandill0/soundtrackd-v2.git
-   git push -u origin main
-   ```
-   After that, every `git push` deploys automatically, exactly like v1.
-
-Then a **new Netlify site** from this repo (Add new site → Import an existing project → GitHub → pick `soundtrackd-v2`).
-`netlify.toml` already sets the build command and publish directory. Add the env vars from §1.
-It builds at `https://<name>.netlify.app`; verify sign-in and rating there. When happy, move the
-`soundtrackd.org` domain from the v1 site to the new one (Domain management → add domain; Netlify
-handles the SSL cert). DNS at Namecheap doesn't change.
 
 Old links keep working: `album.html?id=…`, `profile.html?user=…` etc. redirect to the new URLs.
 
@@ -147,5 +129,5 @@ Album pages already show a "Buy / listen elsewhere" row. When Amazon Associates 
 Apple sign-in, group conversations, avatar uploads (it's a URL field for now), a "Year in Sound"
 recap, Last.fm listening import, the self-hosted MusicBrainz replica, advertising, tiers beyond the
 single supporter tier. Open decisions I made for you, all reversible: SvelteKit over Next.js; keep
-Netlify; retire the worker; faithful design system; provider-first MBID backfill; private queue with a
+Cloudflare Workers (Netlify until Sept 2026); retire the v1 Deezer proxy worker; faithful design system; provider-first MBID backfill; private queue with a
 public toggle; no founding-cohort cap (the copy on `/supporters` hints at it); Lemon Squeezy.
