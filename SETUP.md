@@ -106,6 +106,25 @@ and start MusicBrainz matching with `mbid-backfill`. In production a Cloudflare 
 `listenbrainz`, `warm-catalog` and `mbid-backfill` every 10 minutes; it needs `JOBS_SECRET` set as a Worker secret. Run `backfill-v1` by hand once against the
 production URL after deploying.
 
+## 6. Deploy
+
+The site runs on **Cloudflare Workers**, deployed straight from GitHub. It moved off Netlify in September 2026 when Netlify's free credits ran out. The repo is https://github.com/pandill0/soundtrackd-v2, and every `git push` to `main` builds and deploys.
+
+Setting it up from scratch:
+
+1. **Create the Worker from the repo:** Cloudflare dashboard → Workers & Pages → Create → Import a repository → GitHub → `pandill0/soundtrackd-v2`. Name it `soundtrackd`, which must match `name` in `wrangler.jsonc`. Build command `npm run build`, deploy command `npx wrangler deploy`. Non-secret runtime settings come from `wrangler.jsonc`.
+2. **Build variables:** Settings → Build → Variables and Secrets. Add `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_KEY` as plain text. The build stops without them, because `src/lib/config.ts` checks for them at build time too.
+3. **Runtime secrets:** Settings → Variables and Secrets, the main section rather than the Build one. Add `SUPABASE_SECRET_KEY`, `JOBS_SECRET` and `LASTFM_API_KEY` as type Secret, then redeploy. Without `SUPABASE_SECRET_KEY` the site still browses, but the catalogue falls back to memory mode and rating fails with "unknown catalogue item".
+4. **Check it** at `https://soundtrackd.<account>.workers.dev` (currently `soundtrackd.spacedemon324.workers.dev`). Add that address to Supabase's redirect URLs to test Google sign-in there.
+5. **Domain:** `soundtrackd.org` uses Cloudflare's nameservers. Namecheap is still the registrar: the domain was connected to Cloudflare, not transferred. The apex is attached to the Worker under Settings → Domains & Routes → Add domain. The records Cloudflare copied from the old host had to be deleted first.
+6. **`www` is a redirect, not a Worker domain.** It has a proxied placeholder record (`A www 192.0.2.1`) and a Redirect Rule: wildcard `https://www.soundtrackd.org/*` to `https://soundtrackd.org/${1}`, status 301, query string kept. One host keeps Google sign-in working, since Supabase only allows `soundtrackd.org`.
+7. **Cron:** the schedule in `wrangler.jsonc` (`*/10 * * * *`) is created on deploy. Worker → Settings → Triggers shows it, and Logs shows each run.
+
+Keep the Resend DNS records (`send` MX and TXT, `resend._domainkey` TXT). They send the sign-up and password emails.
+
+Scripts that call the site need a browser User-Agent, because Cloudflare's bot filter answers `error code: 1010` otherwise. Never send the Supabase secret key with a browser User-Agent: Supabase rejects that as a leaked key.
+
+Free-plan limits worth knowing: 100k requests a day, 10 ms of CPU per request (waiting on the network does not count), and 50 outbound requests per invocation, which is why the background jobs process small batches per tick. The $5/month Workers Paid plan lifts these if the site outgrows them.
 
 Old links keep working: `album.html?id=…`, `profile.html?user=…` etc. redirect to the new URLs.
 
