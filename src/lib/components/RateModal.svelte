@@ -22,7 +22,7 @@
 	});
 
 	const shown = $derived(preview || value);
-	const label = $derived(shown ? `${starString(shown)} — ${ratingLabel(shown)}` : 'Tap a star to rate');
+	const label = $derived(shown ? `${starString(shown)} · ${ratingLabel(shown)}` : 'Tap a star to rate');
 
 	/** Mouse position inside a star decides half vs full (§9). */
 	function valueFromEvent(e: MouseEvent | TouchEvent, starIndex: number): number {
@@ -53,7 +53,7 @@
 			return;
 		}
 		if (!RATING_STEPS.includes(value as (typeof RATING_STEPS)[number])) {
-			error = 'Pick a rating first — a review needs a rating (§9).';
+			error = 'Pick a rating first. A review needs a rating.';
 			return;
 		}
 		saving = true;

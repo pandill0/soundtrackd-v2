@@ -33,7 +33,7 @@
 		</div>
 	{:else}
 		<div class="empty">
-			No conversations yet. Messages are between friends — send a record to someone.
+			No conversations yet. Messages are between friends. Send a record to someone.
 			<br /><a class="btn btn-sm btn-primary" href="/friends">Go to friends</a>
 		</div>
 	{/if}

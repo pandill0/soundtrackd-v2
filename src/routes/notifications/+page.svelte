@@ -21,9 +21,9 @@
 				return { text: `${who} liked your review${a?.album_title ? ` of ${a.album_title}` : ''}`, href: a?.catalog_item_id ? `/album/${a.catalog_item_id}` : '/notifications' };
 			}
 			case 'friend_request':
-				return { text: `${who} wanted to be friends — follow them back and you will be`, href: n.from_profile ? `/profile/${encodeURIComponent(n.from_profile.username)}` : '/friends' };
+				return { text: `${who} wanted to be friends. Follow them back and you will be.`, href: n.from_profile ? `/profile/${encodeURIComponent(n.from_profile.username)}` : '/friends' };
 			case 'friend_accepted':
-				return { text: `${who} follows you too — you're now friends`, href: n.from_profile ? `/profile/${encodeURIComponent(n.from_profile.username)}` : '/friends' };
+				return { text: `${who} follows you too, so you're now friends`, href: n.from_profile ? `/profile/${encodeURIComponent(n.from_profile.username)}` : '/friends' };
 			case 'message':
 				return { text: `New message from ${who}`, href: n.ref_id ? `/messages/${n.ref_id}` : '/messages' };
 			default:
@@ -48,7 +48,7 @@
 			{/each}
 		</div>
 	{:else}
-		<div class="empty">Nothing yet. Follow a few people and rate some records — it'll fill up.</div>
+		<div class="empty">Nothing yet. Follow a few people and rate some records, and it'll fill up.</div>
 	{/if}
 </div>
 

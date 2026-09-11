@@ -90,7 +90,7 @@
 		const reason = prompt('Why are you reporting this message?');
 		if (reason === null) return;
 		await fetch('/api/messages/report', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message_id: m.id, reason }) });
-		alert('Thanks — reported.');
+		alert('Thanks. Your report was sent.');
 	}
 	async function remove(m: Message) {
 		if (!confirm('Delete this message?')) return;

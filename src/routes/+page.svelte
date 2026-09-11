@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>Soundtrackd — Letterboxd, for music</title>
+	<title>Soundtrackd · Letterboxd, for music</title>
 	<meta name="description" content="Rate albums and songs, write reviews, follow people whose taste you trust, and discover your next favourite record through them." />
 </svelte:head>
 
@@ -41,7 +41,7 @@
 			<h1>Letterboxd,<br /><em>for music.</em></h1>
 			<p class="lede">
 				Log the records you hear with half-star ratings and honest reviews. Follow people whose taste you trust.
-				Find the next one through them — not an algorithm.
+				Find the next one through them, not an algorithm.
 			</p>
 			<div class="cta-row">
 				<a class="btn btn-primary shine big" href="/login?mode=signup">Create your account</a>

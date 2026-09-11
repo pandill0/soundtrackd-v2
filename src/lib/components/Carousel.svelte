@@ -39,7 +39,7 @@
 								<span class="avg-rating small-avg">{formatAvg(stats[current.id].avg_rating)}</span>
 								<span class="muted tiny">{stats[current.id].rating_count} community rating{stats[current.id].rating_count === 1 ? '' : 's'}</span>
 							{:else}
-								<span class="muted small">Nobody here has rated this yet — be first.</span>
+								<span class="muted small">Nobody here has rated this yet. Be the first.</span>
 							{/if}
 						</div>
 					</div>

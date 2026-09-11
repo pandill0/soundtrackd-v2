@@ -42,7 +42,7 @@ export const actions: Actions = {
 			const msg = /invalid login/i.test(error.message)
 				? 'Wrong email or password.'
 				: /not confirmed/i.test(error.message)
-					? 'Please confirm your email first — check your inbox for the link.'
+					? 'Please confirm your email first. Check your inbox for the link.'
 					: error.message;
 			return fail(400, { action: 'signin', email, error: msg });
 		}
@@ -80,7 +80,7 @@ export const actions: Actions = {
 			action: 'signup',
 			success: true,
 			email,
-			message: `Almost there — we sent a confirmation link to ${email}. Open it, then sign in.`
+			message: `Almost there. We sent a confirmation link to ${email}. Open it, then sign in.`
 		};
 	},
 

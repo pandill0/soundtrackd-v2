@@ -30,7 +30,7 @@
 </script>
 
 {#if compact}
-	<button class="qb compact" class:on={queued} onclick={toggle} disabled={busy} title={queued ? 'In your queue — click to remove' : 'Add to listen queue'} aria-pressed={queued}>
+	<button class="qb compact" class:on={queued} onclick={toggle} disabled={busy} title={queued ? 'In your queue. Click to remove' : 'Add to listen queue'} aria-pressed={queued}>
 		{queued ? '✓' : '+'}
 	</button>
 {:else}

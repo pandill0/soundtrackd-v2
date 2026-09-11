@@ -134,7 +134,7 @@
 						</div>
 					{/each}
 				{:else}
-					<p class="muted small">No friends yet — <a class="link" href="/members">find some</a>. Friends can message each other.</p>
+					<p class="muted small">No friends yet. <a class="link" href="/members">Find some</a>. Friends can message each other.</p>
 				{/if}
 			</div>
 

@@ -40,7 +40,7 @@
 				<div class="field"><label for="website">Website</label><input class="input" id="website" name="website" maxlength="200" value={p.website ?? ''} placeholder="yoursite.com" /></div>
 			</div>
 			<div class="field"><label for="avatar">Avatar image URL</label><input class="input" id="avatar" name="avatar_url" maxlength="500" value={p.avatar_url ?? ''} placeholder="https://…/you.jpg" /><span class="hint">Paste a link to a square image. (Uploads are coming.)</span></div>
-			<div class="field"><label for="lb">ListenBrainz username</label><input class="input" id="lb" name="listenbrainz_user" maxlength="64" value={p.listenbrainz_user ?? ''} placeholder="optional" /><span class="hint">Lets Soundtrackd show what you're listening to, automatically. Free and open — listenbrainz.org.</span></div>
+			<div class="field"><label for="lb">ListenBrainz username</label><input class="input" id="lb" name="listenbrainz_user" maxlength="64" value={p.listenbrainz_user ?? ''} placeholder="optional" /><span class="hint">Lets Soundtrackd show what you're listening to, automatically. Free and open, at listenbrainz.org.</span></div>
 			<label class="checkbox"><input type="checkbox" name="queue_public" checked={(p as { queue_public?: boolean }).queue_public ?? false} /> Make my listen queue public</label>
 			{#if data.supporter}
 				<div class="field"><label for="accent">Profile accent colour <span class="tag gold">supporter</span></label><div class="row"><input type="color" id="accent" name="accent_color" value={p.accent_color ?? '#4a9e6b'} /><span class="hint">Tints your name and avatar ring across the site.</span></div></div>

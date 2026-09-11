@@ -10,7 +10,7 @@
 	<div class="eyebrow">Supporter</div>
 	<h1>Keep the records spinning.</h1>
 	<p class="lede">
-		Soundtrackd is free — rating, reviewing, lists, friends and messages will always be free, for everyone.
+		Soundtrackd is free. Rating, reviewing, lists, friends and messages will always be free, for everyone.
 		Supporters cover the servers and the catalogue, and get a few visible thank-yous in return.
 	</p>
 
@@ -21,9 +21,9 @@
 			<li>🎨 A custom accent colour for your name and avatar ring</li>
 			<li>📜 Your name on the <a class="link" href="/supporters">supporters page</a></li>
 		</ul>
-		<p class="muted small">That's the whole list. No features are held back from free members — that's a promise, not a pricing strategy.</p>
+		<p class="muted small">That's the whole list. No features are held back from free members. That's a promise, not a pricing strategy.</p>
 		{#if data.supporter}
-			<p class="success-msg">You're a supporter — thank you. Active until {formatDate(data.until)}.</p>
+			<p class="success-msg">You're a supporter. Thank you! Active until {formatDate(data.until)}.</p>
 			<a class="btn" href="/settings">Pick your accent colour</a>
 		{:else if !page.data.user}
 			<a class="btn btn-primary" href="/login?next=/support">Sign in to support</a>
