@@ -4,6 +4,10 @@ import { safeNext, validateUsername } from '$lib/server/auth-utils';
 
 const REMEMBER_COOKIE = 'st_remember';
 
+/** Cloudflare Turnstile token from the form. Supabase verifies it once captcha protection is on. */
+const captchaToken = (form: FormData) => String(form.get('cf-turnstile-response') ?? '') || undefined;
+const CAPTCHA_MSG = 'Please wait for the security check under the form to finish, then try again.';
+
 export const load: PageServerLoad = async ({ url, locals }) => {
 	if (locals.user) redirect(303, safeNext(url.searchParams.get('next')));
 	return {
@@ -37,9 +41,11 @@ export const actions: Actions = {
 		if (!email || !password) return fail(400, { action: 'signin', email, error: 'Email and password are both required.' });
 
 		rememberChoice(event, form.get('remember') === 'on');
-		const { error } = await event.locals.supabase.auth.signInWithPassword({ email, password });
+		const { error } = await event.locals.supabase.auth.signInWithPassword({ email, password, options: { captchaToken: captchaToken(form) } });
 		if (error) {
-			const msg = /invalid login/i.test(error.message)
+			const msg = /captcha/i.test(error.message)
+				? CAPTCHA_MSG
+				: /invalid login/i.test(error.message)
 				? 'Wrong email or password.'
 				: /not confirmed/i.test(error.message)
 					? 'Please confirm your email first. Check your inbox for the link.'
@@ -71,10 +77,11 @@ export const actions: Actions = {
 			password,
 			options: {
 				data: { username: u.username },
-				emailRedirectTo: `${event.url.origin}/auth/callback?next=${encodeURIComponent(next)}`
+				emailRedirectTo: `${event.url.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+				captchaToken: captchaToken(form)
 			}
 		});
-		if (error) return fail(400, { ...values, error: error.message });
+		if (error) return fail(400, { ...values, error: /captcha/i.test(error.message) ? CAPTCHA_MSG : error.message });
 		if (data.session) redirect(303, next); // email confirmation disabled → straight in
 		return {
 			action: 'signup',
@@ -105,9 +112,11 @@ export const actions: Actions = {
 		const form = await event.request.formData();
 		const email = String(form.get('email') ?? '').trim();
 		if (!email) return fail(400, { action: 'reset', error: 'Enter your email address.' });
-		await event.locals.supabase.auth.resetPasswordForEmail(email, {
-			redirectTo: `${event.url.origin}/auth/callback?next=${encodeURIComponent('/settings?tab=password')}`
+		const { error } = await event.locals.supabase.auth.resetPasswordForEmail(email, {
+			redirectTo: `${event.url.origin}/auth/callback?next=${encodeURIComponent('/settings?tab=password')}`,
+			captchaToken: captchaToken(form)
 		});
+		if (error && /captcha/i.test(error.message)) return fail(400, { action: 'reset', email, error: CAPTCHA_MSG });
 		return { action: 'reset', success: true, email, message: 'If that address has an account, a reset link is on its way.' };
 	}
 };

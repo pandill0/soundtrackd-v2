@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
+	import type { SubmitFunction } from '@sveltejs/kit';
+	import Turnstile from '$lib/components/Turnstile.svelte';
 
 	let { data, form } = $props();
 
@@ -9,6 +11,16 @@
 	let mode = $state<Mode>(data.mode as Mode);
 	let busy = $state(false);
 	let remember = $state(true);
+	// Turnstile tokens are single-use, so every submission gets a fresh widget.
+	let attempts = $state(0);
+	const submit: SubmitFunction = () => {
+		busy = true;
+		return async ({ update }) => {
+			busy = false;
+			attempts += 1;
+			await update();
+		};
+	};
 
 	const message = $derived(form?.success ? form.message : data.message);
 	const error = $derived(form && !form.success && form.action !== 'google' ? form.error : null);
@@ -30,20 +42,21 @@
 		{#if error}<p class="error-msg box">{error}</p>{/if}
 
 		{#if mode !== 'reset'}
-			<form method="POST" action="?/google" use:enhance={() => { busy = true; return async ({ update }) => { busy = false; await update(); }; }}>
+			<form method="POST" action="?/google" use:enhance={submit}>
 				<input type="hidden" name="next" value={data.next} />
 				<input type="hidden" name="remember" value={remember ? 'on' : 'off'} />
-				<button class="btn google" type="submit" disabled={busy}>
+				<button class="btn google big" type="submit" disabled={busy}>
 					<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.4 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.7 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-3.9-13.5-9.3l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
-					Continue with Google
+					{mode === 'signup' ? 'Sign up with Google' : 'Continue with Google'}
 				</button>
+				{#if mode === 'signup'}<p class="muted tiny google-note">Quickest way in. No password to remember.</p>{/if}
 				{#if googleError}<p class="error-msg small">{googleError}</p>{/if}
 			</form>
-			<div class="or"><span>or with email</span></div>
+			<div class="or"><span>{mode === 'signup' ? 'or sign up with email' : 'or with email'}</span></div>
 		{/if}
 
 		{#if mode === 'signin'}
-			<form method="POST" action="?/signin" class="stack" use:enhance={() => { busy = true; return async ({ update }) => { busy = false; await update(); }; }}>
+			<form method="POST" action="?/signin" class="stack" use:enhance={submit}>
 				<input type="hidden" name="next" value={data.next} />
 				<div class="field">
 					<label for="email">Email</label>
@@ -57,11 +70,12 @@
 					<label class="checkbox"><input type="checkbox" name="remember" bind:checked={remember} /> Remember me on this device</label>
 					<button type="button" class="linkish small" onclick={() => (mode = 'reset')}>Forgot password?</button>
 				</div>
+				{#key attempts}<Turnstile />{/key}
 				<button class="btn btn-primary" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
 			</form>
 			<p class="muted small switch">New here? <button type="button" class="linkish" onclick={() => (mode = 'signup')}>Create an account</button></p>
 		{:else if mode === 'signup'}
-			<form method="POST" action="?/signup" class="stack" use:enhance={() => { busy = true; return async ({ update }) => { busy = false; await update(); }; }}>
+			<form method="POST" action="?/signup" class="stack" use:enhance={submit}>
 				<input type="hidden" name="next" value={data.next} />
 				<div class="field">
 					<label for="username">Username</label>
@@ -71,6 +85,7 @@
 				<div class="field">
 					<label for="s-email">Email</label>
 					<input class="input" id="s-email" name="email" type="email" autocomplete="email" required value={form?.email ?? ''} />
+					<span class="hint">Use an address you check. It's how you'd reset your password.</span>
 				</div>
 				<div class="field">
 					<label for="s-password">Password</label>
@@ -78,15 +93,17 @@
 					<span class="hint">At least 8 characters.</span>
 				</div>
 				<label class="checkbox"><input type="checkbox" name="remember" bind:checked={remember} /> Remember me on this device</label>
+				{#key attempts}<Turnstile />{/key}
 				<button class="btn btn-primary" type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create account'}</button>
 			</form>
 			<p class="muted small switch">Already a member? <button type="button" class="linkish" onclick={() => (mode = 'signin')}>Sign in</button></p>
 		{:else}
-			<form method="POST" action="?/reset" class="stack" use:enhance={() => { busy = true; return async ({ update }) => { busy = false; await update(); }; }}>
+			<form method="POST" action="?/reset" class="stack" use:enhance={submit}>
 				<div class="field">
 					<label for="r-email">Email</label>
 					<input class="input" id="r-email" name="email" type="email" autocomplete="email" required value={form?.email ?? ''} />
 				</div>
+				{#key attempts}<Turnstile />{/key}
 				<button class="btn btn-primary" type="submit" disabled={busy}>{busy ? 'Sending…' : 'Send reset link'}</button>
 			</form>
 			<p class="muted small switch"><button type="button" class="linkish" onclick={() => (mode = 'signin')}>← Back to sign in</button></p>
@@ -127,6 +144,10 @@
 	}
 	.google:hover {
 		background: #f1f1f1;
+	}
+	.google-note {
+		text-align: center;
+		margin: 0.45rem 0 0;
 	}
 	.or {
 		display: flex;

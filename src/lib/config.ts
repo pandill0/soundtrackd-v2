@@ -11,6 +11,8 @@ export const config = {
 	siteUrl: (env.PUBLIC_SITE_URL || 'https://soundtrackd.org').replace(/\/$/, ''),
 	supabaseUrl: env.PUBLIC_SUPABASE_URL,
 	supabaseKey: env.PUBLIC_SUPABASE_KEY,
+	/** Cloudflare Turnstile site key (public). Empty hides the "are you human" check on the sign-in forms. */
+	turnstileSiteKey: env.PUBLIC_TURNSTILE_SITE_KEY || '',
 	/** Now-playing older than this stops rendering (§8.1). */
 	nowPlayingMaxAgeMinutes: 30,
 	/** Username rules shared by signup, the welcome step, and the DB constraint. */
