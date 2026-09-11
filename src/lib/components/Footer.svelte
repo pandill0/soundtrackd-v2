@@ -6,7 +6,7 @@
 	<div class="container">
 		<div class="foot-row">
 			<span class="logo-sm">sound<em>trackd</em></span>
-			<span class="muted tiny">v{config.version} · Your taste, on record.</span>
+			<span class="muted tiny">v{config.version} · Rate, review and discover music.</span>
 		</div>
 		<p class="muted tiny attribution">
 			Catalogue identity from <a class="link" href="https://musicbrainz.org" rel="noopener">MusicBrainz</a>

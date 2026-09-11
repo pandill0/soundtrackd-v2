@@ -38,7 +38,7 @@
 	<div class="container hero-inner">
 		<div class="hero-copy">
 			<div class="eyebrow">Now in beta</div>
-			<h1>Your taste,<br /><em>on record.</em></h1>
+			<h1>Every record,<br /><em>rated.</em></h1>
 			<p class="lede">
 				It's like Letterboxd, but for music. Log the records you hear with half-star ratings and honest reviews. Follow people whose taste you trust.
 				Find the next one through them, not an algorithm.
