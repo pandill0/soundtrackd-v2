@@ -12,6 +12,10 @@ export const load: LayoutServerLoad = async ({ locals, cookies, depends, url }) 
 	if (locals.user) {
 		const { data } = await locals.supabase.rpc('unread_counts');
 		if (data && typeof data === 'object') unread = { notifications: 0, messages: 0, ...data };
+		// Reading url.pathname makes this load rerun on every page change, so the nav badges stay
+		// current as you browse. The notifications page marks everything read while it loads (in
+		// parallel with this), so the bell shows zero there rather than a count about to clear.
+		if (url.pathname === '/notifications') unread.notifications = 0;
 
 		if (!cookies.get('st_seen')) {
 			await locals.supabase.rpc('touch_last_seen');
